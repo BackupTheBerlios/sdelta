@@ -1,4 +1,4 @@
-/* $Id: */
+/* $Id: adler32.h,v 1.3 2004/12/12 21:07:12 svinn Exp $ */
 
 #include <sys/types.h>
 #if !defined(__FreeBSD__) && !defined(sun) && !defined(__sun)
