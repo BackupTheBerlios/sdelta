@@ -419,7 +419,7 @@ void  *prepare_sha1(void *nothing)  {
 
 void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   FOUND			found;
-  static FROM		from, delta;
+  FROM			from, delta;
   TO			to;
   static DWORD		*dwp;
   unsigned char		control;
@@ -431,6 +431,10 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   if (from_ibuf) {
       from.buffer  =  from_ibuf->buf;
       from.size    =  from_ibuf->size;
+  }
+  else {
+      from.buffer  =  NULL;
+      from.size    =  0;
   }
   
   found.buffer  =  found_ibuf->buf;
@@ -623,7 +627,7 @@ void  help(void)  {
 
 
 void  parse_parameters( char *f1, char *f2)  {
-  static INPUT_BUF b1, b2;
+  INPUT_BUF b1, b2;
 
   load_buf(f1, &b1);
   load_buf(f2, &b2);
@@ -635,7 +639,7 @@ void  parse_parameters( char *f1, char *f2)  {
 
 
 void  parse_stdin(void) {
-  static INPUT_BUF b;
+  INPUT_BUF b;
 
   load_buf(NULL, &b);
   make_to (NULL, &b);
