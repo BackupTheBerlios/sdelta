@@ -215,22 +215,27 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   unsigned int		count, line, size, total, where, start, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
-  pthread_t		from_thread, to_thread;
+  pthread_t		from_thread, to_thread, sha1_thread;
+
+
+void  *prepare_to(void *nothing)  {
+  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
+  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
+  return NULL;
+}
 
 
 void  *prepare_from(void *nothing)  {
-  td  =  mhash_init	( MHASH_SHA1 );
-         mhash		( td, from.buffer, from.size );
-         mhash_deinit	( td, from.sha1 );
-
   make_index  ( &from.index, from.buffer, from.size );
   MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM );
   return NULL;
 }
 
-void  *prepare_to(void *nothing)  {
-  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
-  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
+
+void  *prepare_sha1(void *nothing)  {
+  td  =  mhash_init	( MHASH_SHA1 );
+         mhash		( td, from.buffer, from.size );
+         mhash_deinit	( td, from.sha1 );
   return NULL;
 }
 
@@ -239,11 +244,11 @@ void  *prepare_to(void *nothing)  {
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
-  pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_create(   &to_thread, NULL, prepare_to,   NULL );
-  pthread_join  (  from_thread, NULL );
+  pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_join  (    to_thread, NULL );
-
+  pthread_join  (  from_thread, NULL );
+  pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
 
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
   found.count       =  0;
@@ -397,12 +402,12 @@ void  *prepare_to(void *nothing)  {
   free   (  from.index.natural     );
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
-  /* munmap (  from.buffer, from.size ); */
+
+  pthread_join  ( sha1_thread, NULL );
   unload_buf(from_ibuf);
 
   output_sdelta(found, to, from);
 
-  /* munmap (    to.buffer,   to.size ); */
   unload_buf(to_ibuf);
   free   (    to.index.natural     );
   free   (    to.index.crc         );
