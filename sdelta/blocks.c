@@ -111,17 +111,10 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
   u_int16_t	*list;
   int		loop;
-  DWORD		c0, c1;
-
-  c0 = cr[0];
-  c1 = cr[1];
 
   list = ( u_int16_t *) malloc( c * sizeof(u_int16_t) );
-  for( loop = 0 ; c > 0 ; c--)  {
-    list[loop++] =  crc_tag( c0, c1);
-    c0 = c1;
-    c1 = cr[loop + 1];
-  }
+  for( loop = 0 ; c > 0 ; c--, loop++)
+    list[loop] =  crc_tag( cr[loop], cr[loop+1]);
   return  list;
 }
 
