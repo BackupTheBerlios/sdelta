@@ -2,9 +2,6 @@
 
 This code, blocks.c written and copyrighted by Kyle Sallee,
 creates and orders lists of dynamically sized blocks of data.
-It is tuned to creating blocks between 
-1 and 127 bytes long that begin after
-line feeds and end with line feeds.
 Please read LICENSE if you have not already
 
 */
@@ -29,6 +26,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
     for (maxp = (a = p) + MIN(0x7f, max - p); *p++ != 0x0a && p < maxp;);
+    /* Want to change maximum block size from 0x7f to 0x100 in sdelta 2 */
   }
 
   *t  =  s;
