@@ -12,7 +12,7 @@ load_config()  {
                   ${SDREQ_DIR}/tmp   \
                   ${SDREQ_DIR}/want  \
                   ${SDREQ_DIR}/waiting
-    config_menu
+    run_config
     exit  1
   fi
 }
@@ -86,6 +86,45 @@ Patches can also be uploaded directly to a FTP server."
 }
 
 
+config_text()  {
+  local  COMMAND  OK  CANCEL  HELP
+
+    HELP=$"Please configure how sdreq should function
+Upon completion of patch generation sdelta@ibiblio.org 
+can send an email notifying pick up is ready.
+Patches can also be uploaded directly to a FTP server."
+  E_HELP=$"Email address.           Example: $LOGNAME@$HOSTNAME"
+  F_HELP=$"FTP upload information.  Example: ftp://$LOGNAME:password@ftp.mydom.com/pub/uploads"
+  N_HELP=$"Receive an email upon sdelta generation completion?"
+  U_HELP=$"Upload sdelta patches to your ftp server?"
+
+  echo      "$HELP"    1>&2
+  echo      "$N_HELP"  1>&2
+  read  -p  "Please enter true or false: "  NOTIFY
+  echo      "$E_HELP"  1>&2
+  read                                      EMAIL
+  echo      "$U_HELP"  1>&2
+  read  -p  "Please enter true or false: "  UPLOAD
+  echo      "$F_HELP"
+  read                                      FTP
+
+  NOTIFY="${NOTIFY:-false}"
+  UPLOAD="${UPLOAD:-false}"
+   EMAIL="${EMAIL:-$LOGNAME$HOSTNAME}"
+  save_config
+}
+
+
+run_config()  {
+  if    [  -f  /usr/bin/dialog  ]  &&
+        [  -x  /usr/bin/dialog  ]  &&
+        !      /usr/bin/dialog  --version  |  grep  -q  "0\.3\|0\.4"
+  then  config_menu
+  else  config_text
+  fi
+}
+
+
 help() {
   echo  $"$COPYRIGHT"
   echo
@@ -101,8 +140,11 @@ help() {
 }
 
 
-list()        { find $1 -follow -type f -not -empty -printf "%P\n"; }
-list_empty()  { find $1 -follow -type f      -empty -printf "%P\n"; }
+# list()        { find $1 -follow -type f -not -empty -printf "%P\n"; }
+# list_empty()  { find $1 -follow -type f      -empty -printf "%P\n"; }
+
+list()        { find $1 -follow -type f -not -empty | sed "s:^$1::"; }
+list_empty()  { find $1 -follow -type f      -empty | sed "s:^$1::"; }
 
 tars()  {
   sed  "s:\.tgz$:.tar:
@@ -265,10 +307,10 @@ COPYRIGHT="sdreq by Kyle Sallee Copyright 2005, all rights reserved."
 
 load_config
 case  $1  in
-      want)  want         ;;
-  download)  download     ;;
-       new)  apply        ;;
-    config)  config_menu  ;;
-         *)  help         ;;
+      want)  want        ;;
+  download)  download    ;;
+       new)  apply       ;;
+    config)  run_config  ;;
+         *)  help        ;;
 esac
 true
