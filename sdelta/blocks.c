@@ -29,7 +29,6 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
     for (maxp = (a = p) + MIN(0x7f, max - p); *p++ != 0x0a && p < maxp;);
-    if  ( ( p - a ) > 0x7f )  { p = a + 0x7f;  }
   }
 
   *t  =  s;
