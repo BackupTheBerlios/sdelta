@@ -24,7 +24,7 @@ u_int32_t adler32(unsigned char *b, u_int32_t s) {
 */
   }
 
-  while  ( s1 >= 65521 )  s1 -= 65521;
+/*  while  ( s1 >= 65521 )  s1 -= 65521;  */
   while  ( s2 >= 65521 )  s2 -= 65521;
 
 
