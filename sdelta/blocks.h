@@ -15,8 +15,9 @@ typedef struct INDEX {
 
 
 u_int32_t  *natural_block_list  (unsigned char *, int,             int *);
-DWORD      *crc_list            (unsigned char *, u_int32_t     *, int  );
-void        make_index          (INDEX         *, unsigned char *, int  );
+DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
+DWORD      *crc_list_sig        (unsigned char *, u_int32_t     *, int, int *);
+void        make_index          (INDEX         *, unsigned char *, int);
 
 /*
 LINE	*natural_block_list	(unsigned char *, int,             int *);

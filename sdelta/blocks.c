@@ -52,9 +52,6 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
 
   while ( c > 0 )  {
     size = n[1] - n[0];
-/*
-    if  ( size > lazy )  l->dword = adler32 ( b + *n, size );
-*/
     if  ( size > 4 )  l->dword = adler32 ( b + *n, size );
     else              l->dword = 0xfff1fff1;
 
@@ -66,7 +63,29 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
 }
 
 
-unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, unsigned int *b ) {
+DWORD	*crc_list_sig ( unsigned char *b, u_int32_t *n, int c, int *s) {
+  DWORD  *l, *list;
+  int     size, i, x;
+
+  l = list = ( DWORD *) malloc( c * sizeof(DWORD) );
+
+  x = c;
+  i = 0;
+  while ( x > 0 )  {
+    size = n[1] - n[0];
+    if  ( size > 4 )  l->dword = adler32 ( b + *n, size );
+    else           {  l->dword = 0xfff1fff1;  i++;  }
+
+    l++;
+    n++;
+    x--;
+  }
+  *s = c - i;
+  return  list;
+}
+
+
+unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, unsigned int b ) {
 
   u_int32_t    *r;
   u_int32_t	l, t;
@@ -93,18 +112,10 @@ unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, 
     return  diff;
   }
 
-  r   =  (u_int32_t *)  malloc (    c * sizeof(u_int32_t) );
+  r   =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
 
-  for ( l = t = 0; l < c; l++ )
+  for ( l = t = 0; t < b; l++ )
     if  ( cr[l].dword != 0xfff1fff1 )  r[t++] = l;
-
-/*
-  for ( l = t = 0; l < c; l++ )
-    if  ( bl[l+1] - bl[l] > lazy )  r[t++] = l;
-*/
-
-  r   =  (u_int32_t *) realloc ( r, t * sizeof(u_int32_t) );
-  *b  =  t;
 
   qsort(r, t, sizeof(u_int32_t), compare_block);
   return  r;
@@ -157,11 +168,11 @@ unsigned int  *order_tag_crc_offset ( LINE *n, unsigned int c, unsigned int *b )
 
 void make_index(INDEX *r, unsigned char *b, int s) {
 
-  int    loop, size;
+  int    loop, size, o;
 
   r->natural  =  natural_block_list    (b, s, &r->naturals);
-  r->crc      =  crc_list              (b, r->natural, r->naturals );
-  r->ordered  =  order_tag_crc_offset  (r->natural, r->crc, r->naturals, &r->ordereds);
+  r->crc      =  crc_list_sig          (b, r->natural, r->naturals, &r->ordereds);
+  r->ordered  =  order_tag_crc_offset  (r->natural, r->crc, r->naturals, r->ordereds);
   r->tags     =  malloc ( 0x10000 * sizeof( u_int32_t) );
 
   for ( loop = 0; loop < 0xffff ; )  r->tags[loop++] = 0xffffffff;
