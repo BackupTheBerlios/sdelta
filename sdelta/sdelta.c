@@ -222,7 +222,7 @@ void  *prepare_to(void *nothing)  {
 
 void  *prepare_from(void *nothing)  {
   make_index  ( &from.index, from.buffer, from.size );
-  MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM );
+  /* MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM ); */
   return NULL;
 }
 

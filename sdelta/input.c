@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.5 2005/01/11 17:49:56 svinn Exp $ */
+/* $Id: input.c,v 1.6 2005/01/13 17:04:45 svinn Exp $ */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -49,7 +49,7 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	    else {
 		/* mmaped successfully, so return */
 		b->mmap_size = b->size = alloc_size;
-		MADVISE(b->buf, alloc_size, MADV_SEQUENTIAL);
+		MADVISE(b->buf, alloc_size, MADV_RANDOM);
 		return;
 	    }
 #endif
