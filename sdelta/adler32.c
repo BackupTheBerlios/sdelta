@@ -4,7 +4,7 @@ excellent and fast 32-bit cyclic redundancy check.
 An alternate example and longer explanation of adler32
 is available at http://www.ietf.org/rfc/rfc1950.txt
 This implementation is accurate only for block sizes 
-less than 256 bytes.
+less than 257 bytes.
 */
 
 #include "adler32.h"

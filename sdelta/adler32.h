@@ -1,4 +1,4 @@
-/* $Id: adler32.h,v 1.4 2004/12/18 16:53:33 svinn Exp $ */
+/* $Id: adler32.h,v 1.5 2004/12/29 13:59:23 svinn Exp $ */
 
 #include <sys/types.h>
 
@@ -56,6 +56,6 @@ typedef union DWORD {
 } DWORD;
 
 
-u_int32_t  crc32	(unsigned char *b, u_int32_t s);
+u_int32_t  adler32	(unsigned char *b, u_int32_t s);
 
 #define crc_tag(crc)( ( crc.word.low + crc.word.high ) & 0xffff )
