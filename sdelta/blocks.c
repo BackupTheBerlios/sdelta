@@ -158,7 +158,6 @@ unsigned int  *order_tag_crc_offset ( LINE *n, unsigned int c, unsigned int *b )
 void make_index(INDEX *r, unsigned char *b, int s) {
 
   int    loop, size;
-  DWORD  crc;
 
   r->natural  =  natural_block_list    (b, s, &r->naturals);
   r->crc      =  crc_list              (b, r->natural, r->naturals );
@@ -168,17 +167,7 @@ void make_index(INDEX *r, unsigned char *b, int s) {
   for ( loop = 0; loop < 0xffff ; )  r->tags[loop++] = 0xffffffff;
 
   loop  =  r->ordereds - 1;
-  while ( loop >= 0 )  {
-    crc = r->crc[ r->ordered[loop] ];
-    if  ( crc.dword != 0xfff1fff1 )
-       r->tags[ crc_tag ( crc ) ]  =  loop--;
-    else
-      loop--;
-  }
-
-/*
   while ( loop >= 0 )
     r->tags[ crc_tag ( r->crc[ r->ordered[loop] ] ) ]  =  loop--;
-*/
 
 }
