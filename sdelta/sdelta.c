@@ -172,18 +172,10 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 #define  leap(frog) \
   if ( start >= frog ) { \
     from.block   =   from.index.ordered[where + frog]; \
-    fcrc0.dword  =   from.index.crc[from.block].dword; \
-    if ( crc0.dword  >  fcrc0.dword  ) { \
+    fcrc         =  *(QWORD *)( from.index.crc + from.block ); \
+    if ( crc.qword  >  fcrc.qword  ) { \
       where  +=  frog; \
       start  -=  frog; \
-    } \
-    else if  ( crc0.dword  ==  fcrc0.dword ) { \
-      fcrc1.dword = from.index.crc[from.block+1].dword; \
-      if ( crc1.dword  >  fcrc1.dword ) { \
-            where  +=  frog; \
-            start  -=  frog; \
-      } \
-      else  start   =  frog - 1; \
     } else  start   =  frog - 1; \
   }
 
@@ -211,7 +203,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   FOUND			found;
   unsigned int		count, line, total, where, start, finish, limit;
   u_int16_t		tag;
-  DWORD			crc0, crc1, fcrc0, fcrc1;
+  QWORD			crc, fcrc;
   pthread_t		from_thread, to_thread, sha1_thread;
   SHA_CTX		ctx;
 
@@ -258,9 +250,7 @@ void  *prepare_sha1(void *nothing)  {
     if   ( ( to.index.natural[to.block + 2] -
              to.index.natural[to.block    ] ) >= 0x10 ) {
 
-      crc0.dword     =  to.index.crc[to.block    ].dword;
-      crc1.dword     =  to.index.crc[to.block + 1].dword;
-      tag            =  crc_tag ( crc0, crc1 );
+      tag            =  qtag( crc = *(QWORD *)( to.index.crc + to.block ) );
       start          =  from.index.tags[tag].range;
 
       if  ( start == 0 )  {  to.block++;  continue;  }
@@ -291,30 +281,18 @@ void  *prepare_sha1(void *nothing)  {
       match.count    =  1;
          to.limit    =  to.index.naturals - to.block;
 
-      from.block   =  from.index.ordered[where]; 
-      fcrc0.dword  =  from.index.crc[from.block    ].dword;
+      from.block  =  from.index.ordered[where]; 
+      fcrc        =  *(QWORD *)( from.index.crc + from.block );
 
       while ( ( where       <   finish                )  &&
-              ( crc0.dword  >   fcrc0.dword           )  &&
+              ( crc.qword   >   fcrc.qword            )  &&
               ( ++where     <   from.index.ordereds   )
             )
-      {  from.block  = from.index.ordered[where];
-         fcrc0.dword = from.index.crc[from.block    ].dword;
+      {  from.block  =  from.index.ordered[where];
+         fcrc        =  *(QWORD *)( from.index.crc + from.block );
       }
 
-      fcrc1.dword = from.index.crc[from.block + 1].dword;
-      while ( ( crc0.dword  ==  fcrc0.dword          ) &&
-              ( crc1.dword  >   fcrc1.dword          ) &&
-              ( ++where     <   from.index.ordereds  )
-            )
-      {  from.block  = from.index.ordered[where];
-         fcrc0.dword = from.index.crc[from.block    ].dword;
-         fcrc1.dword = from.index.crc[from.block + 1].dword;
-      }
-
-      while ( ( crc0.dword  ==  fcrc0.dword ) &&
-              ( crc1.dword  ==  fcrc1.dword )
-            ) {
+      while ( crc.qword  ==  fcrc.qword ) {
 
         count       =  2;
         from.limit  =  from.index.naturals - from.block;
@@ -324,11 +302,11 @@ void  *prepare_sha1(void *nothing)  {
           limit  =        to.limit;
 
         if ( ( count > match.count ) ||
-             ( from.index.crc[from.block + match.count ].dword ==
-                 to.index.crc[  to.block + match.count ].dword ) )
+             ( from.index.crc[from.block + match.count].dword ==
+                 to.index.crc[  to.block + match.count].dword ) )
           while  ( ( count < limit )  &&
-                   ( from.index.crc[from.block + count ].dword ==
-                       to.index.crc[  to.block + count ].dword ) )
+                   ( from.index.crc[from.block + count].dword ==
+                       to.index.crc[  to.block + count].dword ) )
             count++;
 
         while ( count > match.count ) {
@@ -345,8 +323,7 @@ void  *prepare_sha1(void *nothing)  {
 
         if ( ++where  < from.index.ordereds ) {
           from.block  = from.index.ordered[where];
-          fcrc0.dword = from.index.crc[from.block    ].dword;
-          fcrc1.dword = from.index.crc[from.block + 1].dword;
+          fcrc        =  *(QWORD *)( from.index.crc + from.block );
         } else break;
 
       }  /* finished finding matches for to.block */

@@ -5,6 +5,7 @@
 #ifdef __linux__
 #include <endian.h>
 #elif defined(sun) || defined(__sun)
+typedef uint64_t u_int64_t;
 typedef uint32_t u_int32_t;
 typedef uint16_t u_int16_t;
 #ifndef __BYTE_ORDER
@@ -69,15 +70,28 @@ typedef union DWORD {
 
 } DWORD;
 
-/*
-#define crc_tag(crc)( ( (crc).word.low + (crc).word.high ) & 0xffff )
-*/
 
-#define crc_tag(crc1, crc2)( ( (crc1).word.low  + \
-                               (crc1).word.high + \
-                               (crc2).word.low  + \
-                               (crc2).word.high ) & 0xffff )
+typedef union QWORD {
 
+  u_int64_t     qword;
+
+  struct {
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+      DWORD  low;
+      DWORD  high;
+    #else
+      DWORD  high;
+      DWORD  low;
+    #endif
+  } dword;
+
+} QWORD;
+
+
+#define qtag(qt)( ( u_int16_t ) ( ( (qt).dword.low.word.low   + \
+                                    (qt).dword.low.word.high  + \
+                                    (qt).dword.high.word.low  + \
+                                    (qt).dword.high.word.high ) & 0xffff ) )
 
 /* end of adler32.h */
 

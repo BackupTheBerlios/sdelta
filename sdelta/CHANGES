@@ -104,3 +104,13 @@ Modified the way tag values are calculated to require the
 crc for the desired block and following block to create 
 greater entropy in the ordered block list which yields
 faster searches.
+
+
+Wed Jan 26 10:54:30 UTC 2005			Kyle Sallee
+Modified code to use 64 bit integers where 
+applicable instead of 32 bit integers.
+This change causes minor slow down on 32 bit architecture
+for occasional unnecessary 32 bit memory access.
+However it may be faster on 64 bit architecture
+where it can fetch 64 bits at a time and save 
+on an additional indexing.

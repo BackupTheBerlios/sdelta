@@ -137,7 +137,7 @@ u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
 
   list = ( u_int16_t *) malloc( c * sizeof(u_int16_t) );
   for( loop = 0 ; c > 0 ; c--, loop++)
-    list[loop] =  crc_tag( cr[loop], cr[loop+1]);
+    list[loop] =  qtag( *(QWORD *)(cr + loop) );
   return  list;
 }
 
@@ -158,24 +158,20 @@ TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigne
 
   static int  compare_crc (const void *v0, const void *v1)  {
     u_int32_t	 p0,  p1;
-    DWORD        c0,  c1;
+    QWORD        q0,  q1;
 
     p0  =  *(u_int32_t *)v0;
     p1  =  *(u_int32_t *)v1;
 
-    c0  =  cr[ p0 ];
-    c1  =  cr[ p1 ];
+    q0  =  *(QWORD *)(cr + p0);
+    q1  =  *(QWORD *)(cr + p1);
 
-    if  ( c0.dword == c1.dword ) {
-      c0  =  cr[ p0 + 1];
-      c1  =  cr[ p1 + 1];
-    }
-
-         if  ( c0.dword == c1.dword )  return  p0 - p1;
-    else if  ( c0.dword >  c1.dword )  return   1;
+         if  ( q0.qword == q1.qword )  return  p0 - p1;
+    else if  ( q0.qword >  q1.qword )  return   1;
     else                               return  -1;
 
   }
+
 
   tags  =  malloc ( 0x10000 * sizeof(TAG) );
   tag   =  tag_list(cr, c);
