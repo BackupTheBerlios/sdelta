@@ -86,7 +86,7 @@ Eliminated a bug in sdelta.c where I placed a
 break when I really wanted a continue command.
 
 
-Tue Jan 11 21:45:36 UTC 2005
+Tue Jan 11 21:45:36 UTC 2005			Kyle Sallee
 Using a new input.c to better support mmap reading of files
 and anonymous mmap on stdin on Linux, FreeBSD, and Solaris POSIX.
 mmap of files instead of reading them into swap provides better
@@ -96,3 +96,11 @@ large files like the + 500M Sorcerer Install/Rescue ISO9660.
 Introduced POSIX threading to sdelta generation that should
 improve speed of sdelta generation on SMP boxes with adequate 
 RAM to avoid swapping or re-reading of mmaped files.
+
+
+Sun Jan 16 22:11:32 UTC 2005			Kyle Sallee
+Reviewed source to remove some insignifigantly buggy code.
+Modified the way tag values are calculated to require the
+crc for the desired block and following block to create 
+greater entropy in the ordered block list which yields
+faster searches.

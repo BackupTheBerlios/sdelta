@@ -69,7 +69,16 @@ typedef union DWORD {
 
 } DWORD;
 
+/*
 #define crc_tag(crc)( ( (crc).word.low + (crc).word.high ) & 0xffff )
+*/
+
+#define crc_tag(crc1, crc2)( ( (crc1).word.low  + \
+                               (crc1).word.high + \
+                               (crc2).word.low  + \
+                               (crc2).word.high ) & 0xffff )
+
+
 /* end of adler32.h */
 
 typedef struct TAG {

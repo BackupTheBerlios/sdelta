@@ -79,8 +79,7 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
 
   while ( c > 0 )  {
     size = n[1] - n[0];
-    if  ( size > 4 )  l->dword = adler32 ( b + *n, size );
-    else              l->dword = 0xfff1fff1;
+    l->dword = adler32 ( b + *n, size );
 
     l++;
     n++;
@@ -91,53 +90,40 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
 }
 
 
-DWORD	*crc_list_sig ( unsigned char *b, u_int32_t *n, int c, int *s) {
-  DWORD  *l, *list;
-  int     size, i, x;
-
-  l = list = ( DWORD *) malloc( ( c + 1 ) * sizeof(DWORD) );
-
-  x = c;
-  i = 0;
-  while ( x > 0 )  {
-    size = n[1] - n[0];
-    if  ( size > 4 )  l->dword = adler32 ( b + *n, size );
-    else  {  i++;     l->dword = 0xfff1fff1;  }
-
-    l++;
-    n++;
-    x--;
-  }
-  l->dword = 0xfff1fff1;
-  *s = c - i;
-  return  list;
-}
-
-
-unsigned int *list_sig ( u_int32_t *bl, DWORD *cr, unsigned int b ) {
+unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
   u_int32_t	*r;
   u_int32_t	l, t;
 
-  r     =  (u_int32_t *)  malloc ( ( b + 1 ) * sizeof(u_int32_t) );
+  r     =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
 
-  for ( l = t = 0; t < b; l++ )
-    if  ( cr[l].dword != 0xfff1fff1 )  r[t++] = l;
+  b--;
 
-  r[t] = l;
+  for ( l = t = 0; l < b; l++ )
+    if  ( ( bl[l+2] - bl[l] ) >= 0x10 )  r[t++] = l;
+
+  *c  =  t;
+   r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
   return  r;
 }
 
 
 u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
-  u_int16_t *list;
-  int  loop;
+  u_int16_t	*list;
+  int		loop;
+  DWORD		c0, c1;
+
+  c0 = cr[0];
+  c1 = cr[1];
 
   list = ( u_int16_t *) malloc( c * sizeof(u_int16_t) );
-  for( loop = 0 ; c > 0 ; c--, loop++ )  list[loop] = crc_tag(cr[loop]);
+  for( loop = 0 ; c > 0 ; c--)  {
+    list[loop++] =  crc_tag( c0, c1);
+    c0 = c1;
+    c1 = cr[loop + 1];
+  }
   return  list;
 }
-
 
 
 TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
@@ -207,8 +193,8 @@ void make_index(INDEX *r, unsigned char *b, int s) {
   /* int    loop, size, o, t; */
 
   r->natural     =  natural_block_list  (b, s, &r->naturals);
-  r->crc         =  crc_list_sig        (b, r->natural, r->naturals, &r->ordereds);
-  r->ordered     =      list_sig        (r->natural, r->crc, r->ordereds);
+  r->crc         =  crc_list            (b, r->natural, r->naturals);
+  r->ordered     =      list_sig        (r->natural, r->naturals, &r->ordereds);
   r->tags        =  order_tag           (r->natural, r->ordered, r->crc, r->ordereds, r->naturals);
 
 /*

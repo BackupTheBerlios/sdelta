@@ -207,7 +207,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   TO			to;
   MATCH			match;
   FOUND			found;
-  unsigned int		count, potential, line, size, total, where, start, limit;
+  unsigned int		count, potential, line, size, total, where, start, finish, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
   pthread_t		from_thread, to_thread, sha1_thread;
@@ -249,18 +249,22 @@ void  *prepare_sha1(void *nothing)  {
   found.count       =  0;
   to.block          =  0;
 
-  while  ( to.index.naturals  >  to.block )  {
+  to.index.ordereds = to.index.naturals - 1;
+  while  ( to.index.ordereds  >  to.block )  {
 
-    if   (              to.index.crc[to.block    ].dword != 0xfff1fff1 )  {
+    if   ( ( to.index.natural[to.block + 2] -
+             to.index.natural[to.block    ] ) >= 0x10 ) {
+
       crc0.dword     =  to.index.crc[to.block    ].dword;
       crc1.dword     =  to.index.crc[to.block + 1].dword;
-      tag            =  crc_tag ( crc0 );
+      tag            =  crc_tag ( crc0, crc1 );
       start          =  from.index.tags[tag].range;
 
       if  ( start == 0 )  {  to.block++;  continue;  }
 
-      start--;
       where  =  from.index.tags[tag].index;
+      finish =  where + start;
+      start--;
 
       while ( start >= 0x10000 )
       leap(0x10000);
@@ -283,13 +287,14 @@ void  *prepare_sha1(void *nothing)  {
          to.limit    =  to.index.naturals - to.block;
 
       from.block   =  from.index.ordered[where]; 
-      fcrc0.dword  =  from.index.crc[from.block].dword;
-      while ( ( tag         ==  crc_tag(fcrc0)      )  &&
-              ( crc0.dword  >   fcrc0.dword         )  &&
-              ( ++where     <   from.index.ordereds )
+      fcrc0.dword  =  from.index.crc[from.block    ].dword;
+
+      while ( ( where       <   finish                )  &&
+              ( crc0.dword  >   fcrc0.dword           )  &&
+              ( ++where     <   from.index.ordereds   )
             )
       {  from.block  = from.index.ordered[where];
-         fcrc0.dword = from.index.crc[from.block].dword;
+         fcrc0.dword = from.index.crc[from.block    ].dword;
       }
 
       fcrc1.dword = from.index.crc[from.block + 1].dword;
