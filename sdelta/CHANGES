@@ -142,3 +142,29 @@ Email notification works however uploading
 patch files via ftp is not yet tested.
 The service may or may not be available until sdreq
 and the server side code is completely debugged.
+
+
+Tue Mar  8 01:34:55 UTC 2005	20050308	Kyle Sallee
+The PPR now accepts two types of requests:  patches and tarballs.
+However both the patch names and tarball 
+names must not specify a compression type.
+Allowed:     bash-2.05b.tar-bash-2.05b.tar.sd
+             bash-2.05b.tar
+Disallowed:  bash-2.05b.tar-bash-2.05b.tar.bz2
+             bash-2.05b.tar.7z
+sdreq has been updated to act this way.
+the PPR provides the smallest compressed patch
+whether that patch for download may be called
+bash-2.05b.tar-bash-2.05b.tar.sd.bz2  or
+bash-2.05b.tar-bash-2.05b.tar.sd.7z
+sdreq downloads the patch that is available.
+Consequently, sdreq now requires p7zip installed since 
+some patches may not be available bzip2 compressed.
+This change is entirely transparent to those using the sdreq client.
+
+If you want a bash-2.05.tar.bz2 tarball then touch that
+in your want directory and it will probably be provided.
+If no suitable patch can be created then the smallest
+bzip2 or 7za compressed tarball will be downloaded 
+instead and the compression type will be translated
+to the type specified by the wanted filename.

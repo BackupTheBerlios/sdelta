@@ -6,11 +6,12 @@ load_config()  {
   then         .  ${SDREQ_CONFIG}
         SDREQ_DIR=${SDREQ_CONFIG%/*}
   else  SDREQ_DIR=${SDREQ_CONFIG%/*}
-    mkdir  -p     ${SDREQ_DIR}/have  \
-                  ${SDREQ_DIR}/log   \
-                  ${SDREQ_DIR}/sd    \
-                  ${SDREQ_DIR}/tmp   \
-                  ${SDREQ_DIR}/want  \
+    mkdir  -p     ${SDREQ_DIR}/have       \
+                  ${SDREQ_DIR}/log        \
+                  ${SDREQ_DIR}/receiving  \
+                  ${SDREQ_DIR}/received   \
+                  ${SDREQ_DIR}/tmp        \
+                  ${SDREQ_DIR}/want       \
                   ${SDREQ_DIR}/waiting
     run_config
     exit  1
@@ -147,10 +148,10 @@ list()        { find $1 -follow -type f -not -empty | sed "s:^$1::"; }
 list_empty()  { find $1 -follow -type f      -empty | sed "s:^$1::"; }
 
 tars()  {
-  sed  "s:\.tgz$:.tar:
+  sed  "s:\.tar.7z$:.tar:
         s:\.tar.bz2$:.tar:
         s:\.tar.gz$:.tar:
-        s:\.tar.7z$:.tar:"  |
+        s:\.tgz$:.tar:"  |
   sort  -u
 }
 
@@ -159,8 +160,9 @@ basenames()  {  sed  "s:.*[/]::"  |  sort  -u;  }
 
 
 post()  {
- curl  -m 60  -F "request=@$1;type=text/plain"  \
-       http://ibiblio.org/sdelta/php/request.php
+ curl  -m 60  -F "request=@$1;type=text/plain"    \
+       http://ibiblio.org/sdelta/php/request.php  |
+ grep  -v "pre\>"
 }
 
 
@@ -177,7 +179,7 @@ request_patches()  {
     done
   )  >>  $LOG
 
-  if    grep  -q  "\.sd\."  $LOG  2>/dev/null
+  if    grep  -q  "\.tar\.sd$\|\.tar$"  $LOG  2>/dev/null
   then  post  $LOG
   fi
 }
@@ -196,6 +198,7 @@ match()  {
     ((  LEN--  ))
   done
 
+  [  -n  "$FOUND"  ]  &&
   echo   "$FOUND"  |
   while  read
   do     grep  "$REPLY"  $SDREQ_DIR/tmp/have.files
@@ -218,7 +221,8 @@ sdelta_names()  {
     if    [  -n          "$BEST"  ]
     then  echo  "$( echo  $BEST  |
                     tars         |
-                    basenames    )-$REPLY.sd.bz2"
+                    basenames    )-$REPLY.sd"
+    else  echo  "$REPLY"
     fi
   done
 }
@@ -244,22 +248,50 @@ clean()  {
 }
 
 
-download()  {
-  local  HTS
-         HTS="http://ibiblio.org/sdelta/patches"
+transfer()  {
+  echo  "Downloading  $1"
+  if    curl  -C -  -L  -O  --connect-timeout 120  "$1"
+  then  mv  "$SDREQ_DIR/receiving/${1##*/}"  \
+            "$SDREQ_DIR/received/"
+  else  false
+  fi
+}
 
-  mkdir  -p   $SDREQ_DIR/tmp/receiving
-  cd          $SDREQ_DIR/tmp/receiving
+
+available()  {
+  curl  -f  -I  -L  -m 60  "$1"  2>&1  |  grep  -q  "Content-Length:"
+}
+
+
+download()  {
+  local  SP ST URL
+
+  SP="http://ibiblio.org/sdelta/patches"
+  ST="http://ibiblio.org/sdelta/sources"
+
+  [      -d   $SDREQ_DIR/received  ]  ||
+  mkdir  -p   $SDREQ_DIR/received
+
+  [      -d   $SDREQ_DIR/receiving  ]  ||
+  mkdir  -p   $SDREQ_DIR/receiving
+  cd          $SDREQ_DIR/receiving
 
   list_empty  $SDREQ_DIR/waiting/  |
   while  read;  do
-    if  !  [  -f  $SDREQ_DIR/sd/$REPLY  ];  then
-      echo  "Download  $REPLY"
-      if    curl  -C -  -L  -O  --connect-timeout 120  "$HTS/$REPLY"
-      then  rm    -f                     "$SDREQ_DIR/waiting/$REPLY"
-            mv                     "$SDREQ_DIR/tmp/receiving/$REPLY"  \
-                                   "$SDREQ_DIR/sd/"
-      fi
+    if    [  "${REPLY:0-4}"  ==  ".tar"  ]
+    then  URL="$ST"
+    else  URL="$SP"
+    fi
+    if  !  [  -s   "$SDREQ_DIR/received/$REPLY.7z"   ]  &&
+        !  [  -s   "$SDREQ_DIR/received/$REPLY.bz2"  ]
+    then
+      if    available       "$URL/$REPLY.7z"
+      then  transfer        "$URL/$REPLY.7z"
+      elif  available       "$URL/$REPLY.bz2"
+      then  transfer        "$URL/$REPLY.bz2"
+      else  false
+      fi  &&
+      rm  -f  "$SDREQ_DIR/waiting/$REPLY"
     fi
   done
 
@@ -268,24 +300,47 @@ download()  {
 
 
 apply()  {
-  list   $SDREQ_DIR/sd/  |
+  list   $SDREQ_DIR/received/    |
+  grep  "\.sd\.7z$\|\.sd\.bz2$"  |
   sed    -r  "s:(.*):\1	\1:
-              s:	(.*)\.tar-(.*)\.tar\.sd\.bz2:	\2.tar:"  |
+              s:	(.*)\.tar-(.*)\.tar\.sd\.7z$:	\2.tar:
+              s:	(.*)\.tar-(.*)\.tar\.sd\.bz2$:	\2.tar:"  |
   while  read  PATCH  TO;  do
     FROM="$(  match  $TO  )"
       TO="$(  list_empty   $SDREQ_DIR/want/  |
               grep   $TO                     |
               head  -n  1                    )"
-    if    sd      $SDREQ_DIR/have/$FROM  \
-                  $SDREQ_DIR/sd/$PATCH   \
-                  $SDREQ_DIR/want/$TO
-    then  rm  -f                       $SDREQ_DIR/sd/$PATCH
-    else  rm  -f  $SDREQ_DIR/want/$TO  $SDREQ_DIR/sd/$PATCH
-          touch   $SDREQ_DIR/want/$TO
+    if    sd      "$SDREQ_DIR/have/$FROM"  "$SDREQ_DIR/received/$PATCH"  \
+                  "$SDREQ_DIR/want/$TO"
+    then  rm  -f                           "$SDREQ_DIR/received/$PATCH"
+    else  rm  -f  "$SDREQ_DIR/want/$TO"    "$SDREQ_DIR/received/$PATCH"
+          touch   "$SDREQ_DIR/want/$TO"
           false
     fi
   done
+
+  list   $SDREQ_DIR/received/      |
+  grep  "\.tar\.7z$\|\.tar\.bz2$"  |
+  while  read;  do
+    sd  translate        "$SDREQ_DIR/received/$REPLY"  \
+                         "$SDREQ_DIR/want/$(
+          list_empty     "$SDREQ_DIR/want/"  |
+          grep   "${REPLY%.*}"               |
+          head  -n  1                        )"  &&
+  rm  -f               "$SDREQ_DIR/received/$REPLY"
+  done
+
   clean  $SDREQ_DIR/want  14
+}
+
+
+comp_progs()  {
+  if    !  7za  2>/dev/null  |  grep  -q  "";  then
+    echo  "Please install p7zip available from"
+    echo  "http://p7zip.sourceforge.net"
+    echo  "to gain 7za compression."
+    exit  1
+  fi
 }
 
 
@@ -306,6 +361,7 @@ export  IFS="$TAB$LF"
 COPYRIGHT="sdreq by Kyle Sallee Copyright 2005, all rights reserved."
 
 load_config
+comp_progs
 case  $1  in
       want)  want        ;;
   download)  download    ;;

@@ -11,6 +11,7 @@ compression()  {
        bzip2*)  echo  "bzip2" ;;
         gzip*)  echo  "gzip"  ;;
     compress*)  echo  "gzip"  ;;
+        *tar*)  echo  "tar"   ;;
   esac
 }
 
@@ -61,15 +62,37 @@ uncompress_name()  {
   esac
 }
 
+
 compress()  {
+  local  S7Z  SBZ
+  local  FBZ  F7Z  TMP  DST
+
   rm  -f  "$2"
+
+  DST="$2"
+  TMP="$2.new"
+
   case  "${2##*.}"  in
-       7z)  7za     a   -si  "$2"  <  "$1"  2>/dev/null ;;
-      bz2)  bzip2  -9c    >  "$2"  <  "$1"  ;;
-       gz)  gzip   -9c    >  "$2"  <  "$1"  ;;
-      tgz)  gzip   -9c    >  "$2"  <  "$1"  ;;
-        *)  mv      "$1"     "$2"  ;;
+       7z)  7za     a   -si  "$TMP"    <  "$1"  2>/dev/null ;;
+      bz2)  bzip2  -9c    >  "$TMP"    <  "$1"  ;;
+       gz)  gzip   -9c    >  "$TMP"    <  "$1"  ;;
+      tgz)  gzip   -9c    >  "$TMP"    <  "$1"  ;;
+      max)  FBZ="${TMP%.*}";  F7Z="${FBZ}.7z";  FBZ="${FBZ}.bz2"
+            7za    a    -si  "$F7Z"    <  "$1"  2>/dev/null  &
+            bzip2  -9c    >  "$FBZ"    <  "$1"  &
+            wait
+            S7Z=$( stat      "$F7Z"  -c "%s"  )
+            SBZ=$( stat      "$FBZ"  -c "%s"  )
+            if    ((  S7Z > SBZ ))
+            then  rm  -f  "$F7Z";  TMP="$FBZ";  DST="${2%.*}.bz2"
+            else  rm  -f  "$FBZ";  TMP="$F7Z";  DST="${2%.*}.7z"
+            fi  ;;
+        *)  mv      "$1"     "$TMP"  ;;
   esac  &&  rm  -f  "$1"
+  if    [  -f  "$TMP"  ]
+  then  mv     "$TMP"  "$DST"
+  else  false
+  fi
 }
 
 
@@ -97,6 +120,29 @@ guess()  {
 }
 
 
+translate()  {
+  if      [   "${1}"      !=  "${2}"      ];  then
+    if    [   "${1:0-4}"  ==  "${2:0-4}"  ]
+    then  cp  "${1}"          "${2}"
+    else
+      case  $(  compression    "$1"  )  in
+           7z)  7za    x  -so  "$1"  2>/dev/null  ;;
+        bzip2)  bzip2     -cd  "$1"  ;;
+         gzip)  gzip      -cd  "$1"  ;;
+          tar)  cat            "$1"  ;;
+      esac  |
+      case  "${2##*.}"  in
+         7z)  7za     a   -si  "$2"  2>/dev/null ;;
+        bz2)  bzip2  -9c    >  "$2"  ;;
+         gz)  gzip   -9c    >  "$2"  ;;
+        tgz)  gzip   -9c    >  "$2"  ;;
+        tar)  cat    -      >  "$2"  ;;
+      esac
+    fi
+  fi
+}
+
+
 if    [  "$1"  == "--help" ]  ||
       ((  $#   <  3       ))
 then
@@ -110,6 +156,10 @@ then
   echo      $"Compression types that are automatically detected and supported are:"
   echo       "7za, bzip2, gzip"
   exit  1
+elif  [  "$1"  ==  "translate"  ]  &&
+      [  -s        "$2"         ]
+then  translate    "$2"  "$3"
+      exit  0
 fi
 
 if    !  [  -f  ${SD_MAGIC:=/usr/share/sdelta/magic}  ]
