@@ -204,19 +204,27 @@ request_patches()  {
 
 
 match()  {
-  local  BEST  FILE  FOUND  LEN  START
+  local  BEST  FILE  FOUND  LEN  START  NEW
 
   LEN="${#1}"
   (( LEN = LEN - 4  ))
 
   START="$(  echo  "$1"  |  front_flip  )"
+  START="${START:0:$LEN}"
 
   while
-    FOUND="$(  grep  "^${START:0:$LEN}"  $SDREQ_DIR/tmp/have.tars  |
+    FOUND="$(  grep  "^$START"  $SDREQ_DIR/tmp/have.tars  |
                back_flip  )"
     [  -z  "$FOUND"  ]  &&  ((  LEN > 2  ))
   do
-    ((  LEN--  ))
+    NEW="${START%.*}"
+    LEN="${#NEW}"
+
+    if    [  "$NEW"  ==  "$START"  ]
+    then  (( LEN = LEN - 1 ))
+          START="${START:0:$LEN}"
+    else  START="$NEW"
+    fi
   done
 
   [  -n  "$FOUND"  ]  &&
