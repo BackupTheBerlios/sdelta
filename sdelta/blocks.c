@@ -53,7 +53,6 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *a, *max, *maxp;
   u_int32_t		i;
-  /* u_int32_t		count; */
 
   t    =  r    =  (u_int32_t *) malloc(s + 64);
   max  =  b + s;
@@ -71,9 +70,6 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
   return  r;
 }
-
-
-extern int lazy;
 
 
 DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
@@ -148,7 +144,6 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
   static int  compare_crc (const void *v0, const void *v1)  {
     u_int32_t	 p0,  p1;
     DWORD        c0,  c1;
-    /* int          diff; */
 
     p0  =  *(u_int32_t *)v0;
     p1  =  *(u_int32_t *)v1;
