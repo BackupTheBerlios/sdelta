@@ -126,3 +126,7 @@ Added sd BASH 3.0 script to wrap invocation of sdelta.
 sd provides transparent compression and decompression 
 of source tarballs and sdelta patches.
 This aught to make sdelta easer for POSIX novices.
+
+
+Sun Jan 30 23:48:42 UTC 2005	20050130	Kyle Sallee
+Fixed typos in Makefile reported by Ady Deac <adydeac@yahoo.com>
