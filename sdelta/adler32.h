@@ -1,3 +1,5 @@
+/* $Id: */
+
 #include <sys/types.h>
 #if !defined(__FreeBSD__) && !defined(sun) && !defined(__sun)
 #include <endian.h>
