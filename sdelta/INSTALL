@@ -5,5 +5,11 @@ Please install mhash since sdelta uses mhash
 to generate sha1 checksums.
 
 export to the environment your desired CFLAGS and LDFLAGS.
+
+For Linux and Solaris:
 Then,    issue "make"
 Finally, issue "make install" to have sdelta installed to /usr/bin
+
+For FreeBSD:
+Then,    issue "make bsd"
+Finally, issue "make install"
