@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.2 2005/01/08 22:09:21 svinn Exp $ */
+/* $Id: input.c,v 1.3 2005/01/09 00:16:02 svinn Exp $ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -101,11 +101,11 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	}
 
 #ifdef USE_MAP_ANON_STDIN
-	/* not stdin or not mmaped, ergo, malloc'ed */
-	if (b->fd || !b->is_mmaped) {
+	/* not mmaped, ergo, malloc'ed */
+	if (! b->is_mmaped) {
 #endif
 		/* try to realloc it if needed */
-		if (alloc_size - b->size <= 1 && !(b->buf = realloc(b->buf, b->size))) {
+		if (alloc_size - b->size > 1 && !(b->buf = realloc(b->buf, b->size))) {
 			fprintf(stderr, "realloc(buf, %u) failed\n", b->size);
 			exit(EXIT_FAILURE);
 		}
