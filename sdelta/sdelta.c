@@ -31,20 +31,6 @@ sdelta is a line blocking dictionary compressor.
 #include "mmap.h"
 #include "sdelta.h"
 
-#ifdef USE_MADVISE
-#ifndef USE_MMAP
-#define USE_MMAP
-#endif
-
-#define MADVISE(buf,len) do { \
-    if (madvise((buf), (len), MADV_RANDOM) < 0) { \
-	perror("posix_madvise"); \
-	exit(EXIT_FAILURE); \
-    } \
-} while(0)
-#else
-#define MADVISE(buf,len)
-#endif /* USE_MADVISE */
 
 char	magic[]    =  { 0x13, 0x04, 00, 00 };
 int	verbosity  =  0;
