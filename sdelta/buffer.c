@@ -68,3 +68,54 @@ unsigned char *buffer_file(char *n, size_t *c)  {
   return ( unsigned char * )b;
 
 }
+
+
+#ifdef USE_MAP_ANON_FOR_STDIN_INPUT
+
+unsigned char *read_file_mmap_anon(int fd, size_t prealloc, size_t *sz) {
+    unsigned char *buf;
+    size_t c;
+
+    *sz = 0;
+
+    /* 
+       Using zero as the `prealloc' parameter makes sense only on certain
+       operating systems (notably FreeBSD), where mmap(), when being used with
+       the MAP_ANON flag, doesn't try to actually reserve any memory, thus
+       allowing us to request the absolute maximum, which is 0x7FFFFFFF bytes.
+
+       A non-zero prealloc assumes that you know the exact file size.
+     */
+
+    prealloc = prealloc ? prealloc + 1 : MAX_MAP_ANON;
+
+    if ((buf = mmap(NULL, prealloc, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED) {
+	perror("mmap");
+	exit(EXIT_FAILURE);
+    }
+
+    while (c = read(fd, buf + *sz, prealloc - *sz)) {
+	if (c == -1) {
+	    perror("read");
+	    munmap(buf, prealloc);
+	    exit(EXIT_FAILURE);
+	}
+
+	*sz += c;
+
+	if (prealloc == *sz) {
+	    /* need one extra byte for the terminating line feed */
+	    fprintf(stderr,
+		    "read_file_mmap_anon: can't read more than %u bytes, "
+		    "increase `prealloc' or use 0\n", prealloc-1);
+	    munmap(buf, prealloc);
+	    exit(EXIT_FAILURE);
+	}
+    }
+
+    buf[*sz] = 0x0a;
+
+    return buf;
+}
+
+#endif /* USE_MAP_ANON_FOR_STDIN_INPUT */

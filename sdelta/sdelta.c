@@ -363,7 +363,11 @@ void	make_to(void)  {
   u_int32_t		size;
   MHASH			td;
 
+#ifdef USE_MAP_ANON_FOR_STDIN_INPUT
+  found.buffer  =  read_file_mmap_anon(0, 0, &found.size);
+#else
   found.buffer  =  buffer_stream(stdin, &found.size);
+#endif
 
   if  ( memcmp(found.buffer, &magic, 4) != 0 ) {
     fprintf(stderr, "Input on stdin did not start with sdelta magic.\n");
@@ -536,7 +540,11 @@ void	make_to(void)  {
   fwrite( to.buffer, 1, to.offset, stdout );
 
   free(   to.buffer);
+#ifdef USE_MAP_ANON_FOR_STDIN_INPUT
+  munmap(found.buffer, MAX_MAP_ANON);
+#else
   free(found.buffer);
+#endif
 }
 
 
