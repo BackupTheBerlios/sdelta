@@ -29,23 +29,10 @@ sdelta is a line blocking dictionary compressor.
 #include <unistd.h>
 #include <pthread.h>
 
-#include "mmap.h"
+/* #include "mmap.h" */
+#include "input.h"
 #include "sdelta.h"
 
-#ifdef USE_MADVISE
-#ifndef USE_MMAP
-#define USE_MMAP
-#endif
-
-#define MADVISE(buf,len) do { \
-    if (madvise((buf), (len), MADV_RANDOM) < 0) { \
-	perror("posix_madvise"); \
-	exit(EXIT_FAILURE); \
-    } \
-} while(0)
-#else
-#define MADVISE(buf,len)
-#endif /* USE_MADVISE */
 
 char	magic[]    =  { 0x13, 0x04, 00, 00 };
 int	verbosity  =  0;
@@ -231,7 +218,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 #define leap_0x10000() leap(0x10000)  leap_0x8000
 
 
-void  make_sdelta(char *b1, size_t s1, char *b2, size_t s2)  {
+void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   MHASH			td;
   FROM			from;
   TO			to;
@@ -248,20 +235,27 @@ void  *prepare_from(void *nothing)  {
          mhash		( td, from.buffer, from.size );
          mhash_deinit	( td, from.sha1 );
 
-  make_index ( &from.index, from.buffer, from.size );
-  madvise    (              from.buffer, from.size, MADV_RANDOM );
+  make_index  ( &from.index, from.buffer, from.size );
+  MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM );
+  return NULL;
 }
 
 void  *prepare_to(void *nothing)  {
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals );
+  return NULL;
 }
-
+/*
   from.buffer = b1;
   to.buffer   = b2;
   from.size   = s1;
   to.size     = s2;
+  */
+  from.buffer = from_ibuf->buf;
+  to.buffer   = to_ibuf->buf;
+  from.size   = from_ibuf->size;
+  to.size     = to_ibuf->size;
 
   pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_create(   &to_thread, NULL, prepare_to,   NULL );
@@ -425,11 +419,13 @@ void  *prepare_to(void *nothing)  {
   free   (  from.index.natural     );
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
-  munmap (  from.buffer, from.size );
+  /* munmap (  from.buffer, from.size ); */
+  unload_buf(from_ibuf);
 
   output_sdelta(found, to, from);
 
-  munmap (    to.buffer,   to.size );
+  /* munmap (    to.buffer,   to.size ); */
+  unload_buf(to_ibuf);
   free   (    to.index.natural     );
   free   (    to.index.crc         );
   free   ( found.pair              );
@@ -438,9 +434,9 @@ void  *prepare_to(void *nothing)  {
 
 
 
-void   make_to(char *b1, size_t s1, char *b2, size_t s2)  {
+void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   FOUND			found;
-  FROM			from, delta;
+  static FROM		from, delta;
   TO			to;
   static DWORD		*dwp;
   unsigned char		control;
@@ -449,10 +445,13 @@ void   make_to(char *b1, size_t s1, char *b2, size_t s2)  {
   u_int32_t		size;
   MHASH			td;
 
-   from.buffer  =  b1;
-   from.size    =  s1;
-  found.buffer  =  b2;
-  found.size    =  s2;
+  if (from_ibuf) {
+      from.buffer  =  from_ibuf->buf;
+      from.size    =  from_ibuf->size;
+  }
+  
+  found.buffer  =  found_ibuf->buf;
+  found.size    =  found_ibuf->size;
 
   if  ( memcmp(found.buffer, &magic, 4) != 0 ) {
     fprintf(stderr, "Input on stdin did not start with sdelta magic.\n");
@@ -627,6 +626,9 @@ void   make_to(char *b1, size_t s1, char *b2, size_t s2)  {
 
   fwrite( to.buffer, 1, to.offset, stdout );
 
+  if (from_ibuf)
+      unload_buf(from_ibuf);
+  unload_buf(found_ibuf);
 }
 
 
@@ -655,7 +657,7 @@ void  help(void)  {
 }
 
 
-void  parse_parameters( char *f1, char *f2)  {
+/* void  parse_parameters( char *f1, char *f2)  {
   size_t   s1,  s2;
   char    *b1, *b2;
 
@@ -668,7 +670,6 @@ void  parse_parameters( char *f1, char *f2)  {
   return;
 }
 
-
 void  parse_stdin(void) {
   size_t	 s;
   char		*b;
@@ -676,8 +677,25 @@ void  parse_stdin(void) {
   b=mmap_stdin(&s);
   make_to ( NULL, 0, b, s );
   return;
+} */
+
+void  parse_parameters( char *f1, char *f2)  {
+  static INPUT_BUF b1, b2;
+
+  load_buf(f1, &b1);
+  load_buf(f2, &b2);
+
+  if ( memcmp( b2.buf, &magic, 4 ) == 0 )
+        make_to     (&b1, &b2);
+  else  make_sdelta (&b1, &b2);
 }
 
+void  parse_stdin(void) {
+  static INPUT_BUF b;
+
+  load_buf(NULL, &b);
+  make_to (NULL, &b);
+} 
 
 int	main	(int argc, char **argv)  {
 
