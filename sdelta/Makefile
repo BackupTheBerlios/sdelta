@@ -1,13 +1,13 @@
 CC      := gcc
 PREFIX  ?= /usr
-CFLAGS  ?= -Os -pipe
-CFLAGS  += -finline-functions
+CFLAGS  ?= -O3 -pipe
+#CFLAGS  += -finline-functions
 LDFLAGS ?= -Wl,-s
 
 .PHONY: all bsd install clean
 
 sdelta: *.c *.h
-	 $(CC) $(CFLAGS) $(LDFLAGS) *.c -lmhash -lpthread -o sdelta
+	 $(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta
 
 all: sdelta
 
@@ -15,7 +15,7 @@ clean:
 	rm -f sdelta
 
 bsd:  *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lmhash -pthread -ldlmalloc -o sdelta
+	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -pthread -ldlmalloc /usr/lib/libmd.a -o sdelta
 
 install: sdelta
 	install -m 0755  sdelta          $(PREFIX)/bin

@@ -22,14 +22,17 @@ sdelta is a line blocking dictionary compressor.
 #include <errno.h>
 /* for memcmp */
 #include <string.h>
-#include <mhash.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
 
-/* #include "mmap.h" */
+#ifdef USE_LIBMD
+#include <sha.h>
+#else
+#include <openssl/sha.h>
+#endif
+
 #include "input.h"
 #include "sdelta.h"
 
@@ -44,13 +47,13 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   unsigned char		byte_val;
   int			block;
   DWORD			*dwp;
-  unsigned int		  offset_unmatched_size;
-  MHASH			td;
+  unsigned int		offset_unmatched_size;
+  SHA_CTX		ctx;
 
   found.buffer   =  malloc ( to.size );
-  memcpy( found.buffer,      &magic,     4  );
-  memcpy( found.buffer + 24, &from.sha1, 20 );
-  found.offset   =  44;
+  memcpy( found.buffer,      magic,     4  );
+  memcpy( found.buffer + DIGEST_SIZE + 4, from.digest, DIGEST_SIZE );
+  found.offset   =  4 + 2 * DIGEST_SIZE;
 
   dwp = (DWORD *)&to.size;
   found.buffer[found.offset++] = dwp->byte.b3;
@@ -156,9 +159,9 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   found.buffer[offset_unmatched_size++] = unmatched_size.byte.b1;
   found.buffer[offset_unmatched_size++] = unmatched_size.byte.b0;
   
-  td  =  mhash_init	( MHASH_SHA1 );
-         mhash		( td, found.buffer + 24, found.offset - 24 );
-         mhash_deinit	( td, found.buffer +  4);
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, found.buffer + 4 + DIGEST_SIZE, found.offset - (4 + DIGEST_SIZE));
+  SHA1_Final(found.buffer + 4, &ctx);
 
   fwrite( found.buffer, 1, found.offset, stdout );
   free(found.buffer);
@@ -202,15 +205,15 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 
 
 void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
-  MHASH			td;
   FROM			from;
   TO			to;
   MATCH			match;
   FOUND			found;
-  unsigned int		count, potential, line, size, total, where, start, finish, limit;
+  unsigned int		count, potential, line, total, where, start, finish, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
   pthread_t		from_thread, to_thread, sha1_thread;
+  SHA_CTX		ctx;
 
 
 void  *prepare_to(void *nothing)  {
@@ -228,9 +231,9 @@ void  *prepare_from(void *nothing)  {
 
 
 void  *prepare_sha1(void *nothing)  {
-  td  =  mhash_init	( MHASH_SHA1 );
-         mhash		( td, from.buffer, from.size );
-         mhash_deinit	( td, from.sha1 );
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, from.buffer, from.size);
+  SHA1_Final(from.digest, &ctx);
   return NULL;
 }
 
@@ -430,7 +433,7 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   u_int32_t		line;
   u_int32_t		block;
   u_int32_t		size;
-  MHASH			td;
+  SHA_CTX		ctx;
 
   if (from_ibuf) {
       from.buffer  =  from_ibuf->buf;
@@ -444,13 +447,13 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   found.buffer  =  found_ibuf->buf;
   found.size    =  found_ibuf->size;
 
-  if  ( memcmp(found.buffer, &magic, 4) != 0 ) {
+  if  ( memcmp(found.buffer, magic, 4) != 0 ) {
     fprintf(stderr, "Input on stdin did not start with sdelta magic.\n");
     fprintf(stderr, "Hint: cat sdelta_file from_file | sdelta  > to_file\n");
     exit(EXIT_FAILURE);
   }
 
-  found.offset       =  44;  /* Skip the magic and 2 sha1 */
+  found.offset       =  4 + 2 * DIGEST_SIZE;  /* Skip the magic and 2 sha1 */
   dwp                =  (DWORD *)&to.size;
   dwp->byte.b3       =  found.buffer[found.offset++];
   dwp->byte.b2       =  found.buffer[found.offset++];
@@ -549,24 +552,23 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   if  ( from.buffer == NULL )  {
            from.buffer  =  found.buffer + found.offset + delta.size;
            from.size    =  found.size   - found.offset - delta.size;
-          found.size    =  found.size   - from.size    - 24;
-  } else  found.size   -=  24;
+          found.size    =  found.size   - from.size    - (4 + DIGEST_SIZE);
+  } else  found.size   -=  4 + DIGEST_SIZE;
 
-
-  td  =  mhash_init     ( MHASH_SHA1 );
-         mhash          ( td, from.buffer, from.size );
-         mhash_deinit   ( td, from.sha1 );
-
-  td  =  mhash_init     ( MHASH_SHA1 );
-         mhash          ( td, found.buffer + 24, found.size);
-         mhash_deinit   ( td, found.sha1 );
-
-  if  ( memcmp( found.sha1, found.buffer + 4, 20 ) != 0 ) {
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, from.buffer, from.size);
+  SHA1_Final(from.digest, &ctx);
+  
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, found.buffer + 4 + DIGEST_SIZE, found.size);
+  SHA1_Final(found.digest, &ctx);
+	    
+  if  ( memcmp( found.digest, found.buffer + 4, DIGEST_SIZE ) != 0 ) {
     fprintf(stderr, "The sha1 for this sdelta did not match.\nAborting.\n");
     exit(EXIT_FAILURE);
   }
 
-  if  ( memcmp( from.sha1, found.buffer + 24, 20 ) != 0 ) {
+  if  ( memcmp( from.digest, found.buffer + DIGEST_SIZE + 4, DIGEST_SIZE ) != 0 ) {
     fprintf(stderr, "The sha1 for the dictionary file did not match.\nAborting.\n");
     exit(EXIT_FAILURE);
   }
@@ -631,7 +633,7 @@ void  parse_parameters( char *f1, char *f2)  {
   load_buf(f1, &b1);
   load_buf(f2, &b2);
 
-  if ( memcmp( b2.buf, &magic, 4 ) == 0 )
+  if ( memcmp( b2.buf, magic, 4 ) == 0 )
         make_to     (&b1, &b2);
   else  make_sdelta (&b1, &b2);
 }
