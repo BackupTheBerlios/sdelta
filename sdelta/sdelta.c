@@ -607,14 +607,11 @@ void  help(void)  {
   printf("the previously generated sdelta and the first file.\n\n");
 
   printf("Below is an example to make a bzip2 compressed sdelta patch file.\n\n");
-  printf("$ sdelta linux-2.6.7.tar linux-2.6.8.1.tar | bzip2 -9 > \\\n");
-  printf("> linux-2.6.7-linux-2.6.8.1.tar.sdelta.bz2\n\n\n");
-
+  printf("$ sdelta linux-2.6.7.tar linux-2.6.8.1.tar > linux-2.6.7-2.6.8.1.tar.sdelta\n");
+  printf("$ bzip2  linux-2.6.7-2.6.8.1.tar.sdelta\n\n\n");
   printf("Below is an example for making linux-2.6.8.1.tar\n\n");
-  printf("$ ( bzcat linux-2.6.7-linux-2.6.8.1.tar.sdelta.bz2;\n");
-  printf(">     cat linux-2.6.7.tar ) | ./sdelta > linux-2.6.8.1.tar\n\n");
-  printf("On FreeBSD it could be signifigantly faster to issue:\n");
-  printf("./sdelta linux-2.6.7 linux-2.6.7-linux-2.6.8.1.tar.sdelta > linux-2.6.8.1.tar\n");
+  printf("$ bunzip2 linux-2.6.7-2.6.8.1.tar.sdelta.bz2\n");
+  printf("$ sdelta  linux-2.6.7.tar linux-2.6.7-2.6.8.1.tar.sdelta > linux-2.6.8.1.tar\n");
   exit(EXIT_FAILURE);
 }
 
