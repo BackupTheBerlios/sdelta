@@ -23,15 +23,12 @@ typedef struct FROM {
 
 
 typedef struct MATCH {
-  u_int32_t	line;
-  u_int32_t	count;
+  u_int32_t	line, count;
 } MATCH;
 
 
 typedef struct PAIR {
-  u_int32_t	from;
-  u_int32_t	to;
-  u_int32_t	count;
+  DWORD		from, to, count;
 } PAIR;
 
 
@@ -39,8 +36,7 @@ typedef	struct	FOUND	{
   u_int32_t		count;
   PAIR			*pair;
   unsigned char		*buffer;
-  u_int32_t		offset;
-  u_int32_t		size;
+  u_int32_t		offset, size;
   MHASH			td;
   unsigned char	 	sha1[20];
 }  FOUND;
