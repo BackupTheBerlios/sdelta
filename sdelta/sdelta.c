@@ -43,13 +43,12 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   u_int32_t		size, origin;
   unsigned char		byte_val;
   int			block;
-  int			allocated=0x100000;
   static DWORD		*dwp;
   unsigned int		  offset_unmatched_size;
   u_int32_t		stretch, unmatched_size;
   MHASH			td;
 
-  found.buffer   =  malloc ( allocated );
+  found.buffer   =  malloc ( to.size );
   memcpy( found.buffer,      &magic,     4  );
   memcpy( found.buffer + 24, &from.sha1, 20 );
   found.offset   =  44;
@@ -65,11 +64,6 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 
   for ( block = 0;  block < found.count ; block++ ) {
 
-    if  ( ( found.offset + 0x08 ) > allocated ) {
-      allocated    +=  0x10000;
-      found.buffer  =  (unsigned char *) realloc(found.buffer, allocated);
-    }
-
     stretch   =  found.pair[block].to - to.block;
     to.block  =  found.pair[block].to + found.pair[block].count;
 
@@ -77,7 +71,6 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
     printf("to.index.natural[found.pair[block].to].offset  %i\n",
             to.index.natural[found.pair[block].to].offset );
     printf("block                     %i\n", block);
-    printf("allocated                 %i\n", allocated);
     printf("found.pair[block].count   %i\n", found.pair[block].count);
     printf("found.pair[block].from    %i\n", found.pair[block].from);
     printf("found.pair[block].to      %i\n", found.pair[block].to);
@@ -152,11 +145,6 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
                         to.offset;
 
     if  ( stretch > 0 ) {
-      if  ( ( found.offset + stretch ) > allocated ) {
-        allocated    +=      stretch + 0x10000;
-        found.buffer  =  (unsigned char *) realloc(found.buffer, allocated);
-      }
-
       memcpy ( found.buffer + found.offset,
                   to.buffer +    to.offset, stretch );
 
@@ -243,19 +231,13 @@ void  *prepare_from(void *nothing)  {
 void  *prepare_to(void *nothing)  {
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
-  found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals );
   return NULL;
 }
-/*
-  from.buffer = b1;
-  to.buffer   = b2;
-  from.size   = s1;
-  to.size     = s2;
-  */
+
   from.buffer = from_ibuf->buf;
-  to.buffer   = to_ibuf->buf;
+  to.buffer   =   to_ibuf->buf;
   from.size   = from_ibuf->size;
-  to.size     = to_ibuf->size;
+  to.size     =   to_ibuf->size;
 
   pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_create(   &to_thread, NULL, prepare_to,   NULL );
@@ -263,11 +245,7 @@ void  *prepare_to(void *nothing)  {
   pthread_join  (    to_thread, NULL );
 
 
-/*
-  prepare_from(NULL);
-  prepare_to(NULL);
-*/
-
+  found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
   found.count       =  0;
   to.block          =  0;
 
