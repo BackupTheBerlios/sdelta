@@ -59,8 +59,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    for (maxp = (a = p) + MIN(0x7f, max - p); *p++ != 0x0a && p < maxp;);
-    /* Want to change maximum block size from 0x7f to 0x100 in sdelta 2 */
+    for (maxp = (a = p) + MIN(MAX_BLOCK_SIZE, max - p); *p++ != 0x0a && p < maxp;);
   }
 
   *t  =  s;
@@ -76,7 +75,7 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
   DWORD  *l, *list;
   int     size;
 
-  l = list = ( DWORD *) malloc( c * sizeof(DWORD) );
+  l = list = ( DWORD *) malloc( ( c + 1 ) * sizeof(DWORD) );
 
   while ( c > 0 )  {
     size = n[1] - n[0];
@@ -87,6 +86,7 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
     n++;
     c--;
   }
+  l->dword = 0xfff1fff1;
   return  list;
 }
 
@@ -95,7 +95,7 @@ DWORD	*crc_list_sig ( unsigned char *b, u_int32_t *n, int c, int *s) {
   DWORD  *l, *list;
   int     size, i, x;
 
-  l = list = ( DWORD *) malloc( c * sizeof(DWORD) );
+  l = list = ( DWORD *) malloc( ( c + 1 ) * sizeof(DWORD) );
 
   x = c;
   i = 0;
@@ -108,6 +108,7 @@ DWORD	*crc_list_sig ( unsigned char *b, u_int32_t *n, int c, int *s) {
     n++;
     x--;
   }
+  l->dword = 0xfff1fff1;
   *s = c - i;
   return  list;
 }
@@ -118,16 +119,28 @@ unsigned int *list_sig ( u_int32_t *bl, DWORD *cr, unsigned int b ) {
   u_int32_t	*r;
   u_int32_t	l, t;
 
-  r     =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
+  r     =  (u_int32_t *)  malloc ( ( b + 1 ) * sizeof(u_int32_t) );
 
   for ( l = t = 0; t < b; l++ )
     if  ( cr[l].dword != 0xfff1fff1 )  r[t++] = l;
 
+  r[t] = l;
   return  r;
 }
 
 
-TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
+u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
+  u_int16_t *list;
+  int  loop;
+
+  list = ( u_int16_t *) malloc( c * sizeof(u_int16_t) );
+  for( loop = 0 ; loop < c ; loop++ )  list[loop] = crc_tag(cr[loop]);
+  return  list;
+}
+
+
+
+TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
 
   unsigned int	l, o;
   int		loop;
@@ -150,6 +163,7 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
 
     c0  =  cr[ p0 ];
     c1  =  cr[ p1 ];
+
     if  ( c0.dword == c1.dword ) {
       c0  =  cr[ p0 + 1];
       c1  =  cr[ p1 + 1];
@@ -161,26 +175,18 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
 
   }
 
-  tags  =                 malloc ( 0x10000 * sizeof(TAG) );
-  tag   =  (u_int16_t *)  malloc ( c * sizeof(u_int16_t) );
-
-  for ( l = 0; l < b; l++ ) {
-    o   =  r[l];
-    crc = cr[o];
-    if  ( crc.dword != 0xfff1fff1 )
-      tag[o] = crc_tag ( crc );
-  }
+  tags  =  malloc ( 0x10000 * sizeof(TAG) );
+  tag   =  tag_list(cr, c);
 
   qsort(r, b, sizeof(u_int32_t), compare_tag);
 
   for ( loop = 0; loop < 0xffff ; )
     tags[loop++].range = 0x0;
 
-  loop  =  b - 1;
-  while ( loop >= 0 )  {
+  for ( loop = b - 1 ; loop >= 0 ; loop--) {
           t = tag[ r[loop] ];
     tags[ t ].range++;
-    tags[ t ].index = loop--;
+    tags[ t ].index = loop;
   }
 
   free ( tag );
@@ -203,7 +209,7 @@ void make_index(INDEX *r, unsigned char *b, int s) {
   r->natural     =  natural_block_list  (b, s, &r->naturals);
   r->crc         =  crc_list_sig        (b, r->natural, r->naturals, &r->ordereds);
   r->ordered     =      list_sig        (r->natural, r->crc, r->ordereds);
-  r->tags        =  order_tag           (r->ordered, r->crc, r->ordereds, r->naturals);
+  r->tags        =  order_tag           (r->natural, r->ordered, r->crc, r->ordereds, r->naturals);
 
 /*
   for    ( loop  =  0;  loop  <  0x10000;              loop++ )

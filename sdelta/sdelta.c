@@ -207,7 +207,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   TO			to;
   MATCH			match;
   FOUND			found;
-  unsigned int		count, line, size, total, where, start, limit;
+  unsigned int		count, potential, line, size, total, where, start, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
   pthread_t		from_thread, to_thread, sha1_thread;
@@ -282,58 +282,62 @@ void  *prepare_sha1(void *nothing)  {
       match.count    =  1;
          to.limit    =  to.index.naturals - to.block;
 
-      while ( ( where        <   from.index.ordereds               ) &&
-              ( from.block   =   from.index.ordered[where]         ) &&
-              ( fcrc0.dword  =   from.index.crc[from.block].dword  ) &&
-              ( tag          ==  crc_tag(fcrc0)                    ) &&
-              (  crc0.dword  >   fcrc0.dword                       )
-            )  where++;
+      from.block   =  from.index.ordered[where]; 
+      fcrc0.dword  =  from.index.crc[from.block].dword;
+      while ( ( tag         ==  crc_tag(fcrc0)      )  &&
+              ( crc0.dword  >   fcrc0.dword         )  &&
+              ( ++where     <   from.index.ordereds )
+            )
+      {  from.block  = from.index.ordered[where];
+         fcrc0.dword = from.index.crc[from.block].dword;
+      }
 
-      fcrc1.dword  =  crc1.dword + 1;
+      fcrc1.dword = from.index.crc[from.block + 1].dword;
+      while ( ( crc0.dword  ==  fcrc0.dword          ) &&
+              ( crc1.dword  >   fcrc1.dword          ) &&
+              ( ++where     <   from.index.ordereds  )
+            )
+      {  from.block  = from.index.ordered[where];
+         fcrc0.dword = from.index.crc[from.block    ].dword;
+         fcrc1.dword = from.index.crc[from.block + 1].dword;
+      }
 
-      while ( ( where        <   from.index.ordereds               ) &&
-              ( from.block   =   from.index.ordered[where]         ) &&
-              ( fcrc0.dword  =   from.index.crc[from.block].dword  ) &&
-              (  crc0.dword  ==  fcrc0.dword                       ) &&
-              ( fcrc1.dword  =   from.index.crc[from.block+1].dword  ) &&
-              (  crc1.dword  >   fcrc1.dword                       )
-            )  where++;
+      while ( ( crc0.dword  ==  fcrc0.dword ) &&
+              ( crc1.dword  ==  fcrc1.dword )
+            ) {
 
-      if ( ( crc0.dword == fcrc0.dword ) &&
-           ( crc1.dword == fcrc1.dword )
-         ) {
+        count       =  2;
+        from.limit  =  from.index.naturals - from.block;
 
-        while ( ( where        <   from.index.ordereds                 ) &&
-                ( from.block   =   from.index.ordered[where]           ) &&
-                ( fcrc1.dword  =   from.index.crc[from.block+1].dword  ) &&
-                ( crc1.dword   ==  fcrc1.dword                         )
-              ) {
+        if ( to.limit > from.limit )
+          limit  =      from.limit;  else
+          limit  =        to.limit;
 
-          count       =  2;
-          from.limit  =  from.index.naturals - from.block;
+        while  ( ( count < limit )  &&
+                 ( from.index.crc[from.block + count ].dword ==
+                     to.index.crc[  to.block + count ].dword ) )
+          count++;
 
-          if ( to.limit > from.limit )
-            limit  =      from.limit;  else
-            limit  =        to.limit;
+        potential = count;
 
-          while  ( ( count < limit )  &&
-                   ( from.index.crc[from.block + count ].dword ==
-                       to.index.crc[  to.block + count ].dword ) )
-            count++;
-
-          while ( count > match.count ) {
-            if ( memcmp( from.index.natural[from.block] + from.buffer,
-                          to.index.natural[   to.block] +   to.buffer,
-                          to.index.natural[   to.block + count] -
-                          to.index.natural[   to.block        ]
-                         ) == 0 ) {
-              match.line   =  from.block;
-              match.count  =  count;
-              count  =  0;
-            } else  count--;
-          }
-          where++;
+        while ( count > match.count ) {
+          if ( memcmp( from.index.natural[from.block] + from.buffer,
+                        to.index.natural[   to.block] +   to.buffer,
+                        to.index.natural[   to.block + count] -
+                        to.index.natural[   to.block        ]
+                       ) == 0 ) {
+            match.line   =  from.block;
+            match.count  =  count;
+            count  =  0;
+          } else  count--;
         }
+
+        if ( ++where < from.index.ordereds ) {
+          from.block  = from.index.ordered[where];
+          fcrc0.dword = from.index.crc[from.block    ].dword;
+          fcrc1.dword = from.index.crc[from.block + 1].dword;
+        } else break;
+
       }  /* finished finding matches for to.block */
 
       if ( match.count > 1 ) {
