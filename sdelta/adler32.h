@@ -1,8 +1,10 @@
-/* $Id: adler32.h,v 1.7 2005/01/03 22:10:10 svinn Exp $ */
+/* $Id: adler32.h,v 1.8 2005/01/11 17:16:44 svinn Exp $ */
 
 #include <sys/types.h>
 
-#if defined(sun) || defined(__sun)
+#ifdef __linux__
+#include <endian.h>
+#elif defined(sun) || defined(__sun)
 typedef uint32_t u_int32_t;
 typedef uint16_t u_int16_t;
 #ifndef __BYTE_ORDER
@@ -14,11 +16,6 @@ typedef uint16_t u_int16_t;
 #define __BYTE_ORDER	__BIG_ENDIAN
 #endif /* _LITTLE_ENDIAN */
 #endif /* __BYTE_ORDER */
-#endif /* sun || __sun */
-
-
-#ifdef __linux__
-#include <endian.h>
 #elif defined(_BYTE_ORDER) && !defined(__BYTE_ORDER)
 /* FreeBSD-5 NetBSD DFBSD TrustedBSD */
 #define __BYTE_ORDER	_BYTE_ORDER
