@@ -1,0 +1,141 @@
+This file describes advanced usage of sdelta on boxes with the 
+Sorcerer distribution of GNU Linux and free software installed.
+
+Of course sdelta's primary use is for downloading tiny 
+source upgrade patches that when applied transmute old
+sources into current releases.
+However can sdelta be used to save bandwidth on first time downloads?
+Can sdelta be used to reduce the size of a file transfer when 
+a box does not possess previously downloaded source tarballs?
+Yes sdelta is so powerful it can!
+
+Many source tarballs contain elements also 
+present in autoconf automake and libtool.
+Also every source based distribution already has sources
+for autoconf automake and libtool previously downloaded.
+Combined them and they create a decent dictionary file.
+
+$ cat autoconf-2.59.tar  \
+      automake-1.9.1.tar \
+      libtool-1.5.8.tar  > dictionary
+
+While not the most efficient or effective dictionary
+this is by far the easiest way to generate one.
+
+Now let us assume you are about to download for the first time.
+376356 polypaudio-0.4.tar.bz2
+
+The sorcery tool for downloading is called leech.
+Instead of downloading the full source it checks
+to see if a sdelta of the source using the above 
+dictionary file is present and downloads it instead.
+If it is not present then it sends a request to the
+Sorcerer website for the sdelta patch file to be generated.
+Then, it downloads it.
+How many bytes did the download save?
+
+
+376356 polypaudio-0.4.tar.bz2			<- Full new source tarball
+170028 d1-polypaudio-0.4.tar.sdelta.bz2		<- sdelta using dictionary 1
+ 33759 polypaudio-0.3-polypaudio-0.4.tar.bz2	<- sdelta using old version
+
+If the box has the previous version of polypaudio then one saves
+342597 bytes and downloads a mere 8% of a full source.  Impressive!
+If the box only has the dictionary file then one saves
+206328 bytes and downloads a mere 45% of a full source.  Amazing!
+
+By employing sdelta in this preemptive fashion a 
+box nearly doubles it's effective bandwidth rate!
+
+Sorcerer boxes with the sdelta spell cast 
+and this feature enabled automatically do 
+this whenever a system administrator installs 
+software from the official Sorcerer catalog.
+
+For system administrators to benefit from sdelta technology
+either the original software author must provide sdelta upgrade
+patches along with new current releases of the software or the
+distribution maintainers must provide sdelta upgrade patches.
+sdelta patch generation must happen one level above 
+the box wanting to download a sdelta patch,
+because in order for the patch to be generated both 
+the desired source file and dictionary file must be present.
+Unfortunately, this means SAs with mundane distributions 
+deployed can not benefit from this Sorcerer technology.
+You can either beg your distribution maintainers to invent,
+innovate, and deploy new and existing technologies.
+Or you can deploy the Sorcerer distribution on your
+boxes and begin enjoying next decade's technology today.
+
+Addendum added on Sun Dec  5 23:14:55 UTC 2004:
+
+The generic dictionary file being tested with Sorcerer yielded
+an average savings between 7% and 10% over transfering full sources.
+Ultimately it was determined that savings was incommensurate with
+the amount of bandwidth consummed in mirroring sdelta patches created 
+using a generic dictionary file and the disk space they consume.
+Still more specific dictionary files like using other different
+kde sources as dicitonary files for other kde sources produced 
+good results.  With further study of generic dictionary files 
+and properly selection of which to use for each source the 
+savings could be increased probably upwards to 15% overall.
+Still that is a great deal of effort and only drop in the 
+bucket compared to the savings of using sdelta for generating 
+source upgrade patches.
+
+If you generate good results with using generic dictionary files
+for sdelta please feel free to email me the data that I may revise
+this file and also reconsider deployment of the use of generic 
+dictionary files for transfer size reduction of initial file
+transfers in Sorcerer.  Keep in mind that using a large generic
+dictionary file may provide many potential matches as it grows
+it requires more time to process and threfore becomes a tradeoff
+between size and speed.
+
+Also while not directly related to sdelta patching but 
+compression technology p7zip is available for linux from 
+http://p7zip.sourceforge.net
+In many cases p7zip can compress data far smaller than bzip2 can
+however at a substantial increase in compression time, 
+yet still retains a fast decompression time.
+p7zip has not been tested with sdelta technology, 
+but could possible be used to create even smaller 
+.sdelta.7z  than .sdelta.bz2 patches!
+If you want to give sdelta a try then you 
+might also want to give p7zip a try as well.
+
+Initial requests for sdelta generation for Sorcerer distribution 
+is done on demand in real time, which means the higher compression 
+of p7zip may cause an incommensurate delay in sdelta generation.
+If the sdelta patch can not be generated in time,
+then the initial requesting box may not retrieve it.
+However the sdelta upgrade patch would be available to other 
+boxes that want it later after it's generation is complete.
+
+In the cases when the sdelta patch is very small
+the amount of time for p7ziping would be very small as well.
+However even an impressive 25% greater savings on 12K file
+reduces it to 9K and is not signifigant on any speed 
+Internet connection.  While a 25% reduction of a several 
+megabyte file may result in substantial savings in bytes download, 
+it can also cause a very long compression time especially on slow 
+or heavily loaded box.  sdeltas for Sorcerer are generated on a box
+with an excellent supply of RAM, and swap, but is often under
+heavy load.
+
+The only Sorcerer test done with 7zip was a restructuring of the 
+Install/Rescue disk to optimize the overall ISO for compression.
+
+118M 2004-11-20 02:04 sorcerer-ia32-20041120.iso9660.bz2
+ 95M 2004-11-20 04:51 sorcerer-ia32-20041120.iso9660.7z
+
+Here we realize a 20.5% savings in the 7zip version of
+the Install/Rescue disk compared to the bzip2 version.
+Because this is signifigant and the compression of the
+Install/Rescue disk is done in advance and not upon request
+making available the 7zip compressed version of the ISO9660
+provides an excellent savings in both time and bytes downloaded
+on slow Internet connections.
+
+For those already enjoying Sorcerer the spell 
+for providing 7zip archiver is called p7zip.

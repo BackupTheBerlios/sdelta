@@ -1,0 +1,50 @@
+To generate an sdelta between two source tarballs:
+
+sdelta     glibc-2.3.2.tar  \
+           glibc-2.3.3.tar  |
+bzip2 -9 > glibc-2.3.2-2.3.3.tar.sdelta.bz2
+
+The above example creates a bzip2 compressed 
+sdelta of the glibc-2.3.2.tar and glibc-2.3.3.tar
+Type it all on one line if you prefer omitting the \
+
+Now the produced delta file can be used in conjunction
+with the first source to generate the second.
+
+( bzcat  glibc-2.3.2-2.3.3.tar.sdelta.bz2
+    cat  glibc-2.3.2.tar ) | 
+sdelta > glibc-2.3.3
+
+Of course you can choose to decompress the sdelta first:
+
+bunzip2  glibc-2.3.2-2.3.3.tar.sdelta.bz2
+cat      glibc-2.3.2-2.3.3.tar.sdelta \
+         glibc-2.3.2.tar |
+sdelta > glibc-2.3.3.tar
+
+If bash shell syntax is confusing 
+then please read the bash manual page by typing :  man  bash
+
+I prefer to pipe data when possible between programs.
+
+Using curl and bzip2 for example one can download a 
+sdelta patch file, decompress it in stream without 
+writing it to disk, pipe it into sdelta along 
+with the decompressed dictionary file and have
+the to-file written out or processed in stream by
+another program without writing anything to disk.
+No waste, no temporary file, 
+do it all in one long piped command.
+Yes pipes are cool when you know how to toke them.
+sdelta is a cancer free pipe-able program.
+
+sdelta does not use temporary files. 
+It does not discard data until it is no longer needed.
+sdelta is optimized to use as much memory as required
+to perform it's task and maybe even more than is installed.
+Therefore, when working with large files, such as linux
+source tarballs, please enable adequate swap space. 
+While sdelta may allocate and hold a large portition
+of memory the memory it is actively using at any time
+is usually relatively small and therefore should not
+constantly grind the swap on all except the most limited boxes.

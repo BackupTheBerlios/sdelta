@@ -1,0 +1,9 @@
+Issue "cast mhash"
+
+Or for the unfortunate sorcery deprived SAs
+Please install mhash since sdelta uses mhash
+to generate sha1 checksums.
+
+export to the environment your desired CFLAGS and LDFLAGS.
+Then,    issue "make"
+Finally, issue "make install" to have sdelta installed to /usr/bin

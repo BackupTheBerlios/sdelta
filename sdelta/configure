@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo  "Build   sdelta issue # make"
+echo  "Install sdelta issue # make install"
+echo  "sdelta requires the mhash library available from:"
+echo  "http://mhash.sourceforge.net"
+echo  "sdelta is copyright 2004 by Kyle Sallee, All Rights Reserved."

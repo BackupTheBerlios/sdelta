@@ -1,0 +1,9 @@
+Recommended reading order of files:
+
+If you know what a delta generator is
+then skip README and go straight to INSTALL
+After it is installed read USAGE to begin using it.
+Once you are amazed by the technology read LICENSE.
+If you skipped README you may want to read it now.
+Finally, to see how sdelta technology is used 
+in an advanced fashion please read ADVANCED.

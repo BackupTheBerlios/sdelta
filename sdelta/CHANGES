@@ -1,0 +1,40 @@
+Sun Oct  3 22:17:22 UTC 2004	20041003	Kyle Sallee
+Made sdelta executable smaller, use less memory, and run faster.
+The output format of sdelta patches has not changed
+making this sdelta backward compatible with 20040926
+
+
+Sun Dec  5 01:15:23 UTC 2004	20041205	Kyle Sallee
+Pavel Gorshkov <svinn@gmx.net> reports detailed information 
+about how sdlta crashes on BSD which points toward a bug at 
+the end of function natural_block_list that reallocates the 
+memory for the natural block list smaller than it need be.
+Intersting how linux gives a few more bytes 
+for sloppy memory allocation than BSD allows.
+
+
+Sun Dec  5 22:54:11 UTC 2004	20041206	Kyle Sallee
+Pavel Gorshkov <svinn@gmx.net> provided a patch for 
+adler32.h that corrects endian detection on BSD.
+sdelta is now confirmed to compile and run properly on BSD.
+Thanks Pavel Gorshkov!
+
+File ADVANCED has been updated with the following information:
+1. Results of testing sdelta with the standard dictionary file 
+on a large corpus of source tarballs and the problems and
+benfits of using generic dictionary patching.
+2. Potential use of 7zip high compression technology with sdelta 
+technology and it's current savings over bzip2 for compressing a 
+large and mostly compressible Sorcerer Install/Rescue ISO9660 image.
+
+Wed Dec  8 00:03:12 UTC 2004	20041208	Kyle Sallee
+Pavel Gorshkov <svinn@gmx.net> provided a patch for
+adler32.h that corrects endian detection on Solaris.
+Problem with malloc and realloc on BSD may cause 
+problems creating and using large sdelta patches
+and creates a signifigant performance degredation 
+over sdelta on linux.  To avoid the problem one may
+want to install libdlmalloc from /usr/ports/devel/libdlmalloc
+and then gcc -O2 -pipe *.c -ldlmalloc -lmhash -o sdelta
+or export LD_PRELOAD=/usr/lib/libdlmalloc.so prior to
+running sdelta.
