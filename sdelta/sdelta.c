@@ -194,6 +194,42 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 
 }
 
+
+#define  leap(frog) \
+  if ( start > frog ) { \
+    from.block   =   from.index.ordered[where + frog]; \
+    fcrc0.dword  =   from.index.crc[from.block].dword; \
+    if ( crc0.dword  >  fcrc0.dword  ) { \
+      where  +=  frog; \
+      start  -=  frog; \
+    } \
+    else if  ( crc0.dword  ==  fcrc0.dword ) { \
+      fcrc1.dword = from.index.crc[from.block+1].dword; \
+      if ( crc1.dword  >  fcrc1.dword ) { \
+            where  +=  frog; \
+            start  -=  frog; \
+      } \
+      else  start   =  frog - 1; \
+    } else  start   =  frog - 1; \
+  }
+
+
+#define leap_0x4()     leap(0x4)
+#define leap_0x8()     leap(0x8)      leap_0x4
+#define leap_0x20()    leap(0x20)     leap_0x10
+#define leap_0x40()    leap(0x40)     leap_0x20
+#define leap_0x80()    leap(0x80)     leap_0x40
+#define leap_0x100()   leap(0x100)    leap_0x80
+#define leap_0x200()   leap(0x200)    leap_0x100
+#define leap_0x400()   leap(0x400)    leap_0x200
+#define leap_0x800()   leap(0x800)    leap_0x400
+#define leap_0x1000()  leap(0x1000)   leap_0x800
+#define leap_0x2000()  leap(0x2000)   leap_0x1000
+#define leap_0x4000()  leap(0x4000)   leap_0x2000
+#define leap_0x8000()  leap(0x8000)   leap_0x4000
+#define leap_0x10000() leap(0x10000)  leap_0x8000
+
+
 void  make_sdelta(char *fromfilename, char *tofilename)  {
   /* FILE  		*stream; */
   MHASH			td;
@@ -201,7 +237,7 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   TO			to;
   MATCH			match;
   FOUND			found;
-  unsigned int		count, line, size, total, where, limit;
+  unsigned int		count, line, size, total, where, start, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
 #ifdef USE_MMAP
@@ -277,7 +313,28 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
       crc0.dword     =  to.index.crc[to.block    ].dword;
       crc1.dword     =  to.index.crc[to.block + 1].dword;
       tag            =  crc_tag ( crc0 );
-      where          =  from.index.tags[tag];
+      where          =  from.index.tags[tag].index;
+
+      if  ( where   ==  0xffffffff ) break;
+      start = from.index.tags[tag].range - 1;
+ 
+      while ( start > 0x10000 )
+      leap(0x10000);
+      leap(0x8000);
+      leap(0x4000);
+      leap(0x2000);
+      leap(0x1000);
+      leap(0x800);
+      leap(0x400);
+      leap(0x200);
+      leap(0x100);
+      leap(0x80);
+      leap(0x40);
+      leap(0x20);
+      leap(0x10);
+      leap(0x8);
+      leap(0x4);
+
       match.count    =  1;
          to.limit    =  to.index.naturals - to.block;
 

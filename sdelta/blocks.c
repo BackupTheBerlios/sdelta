@@ -136,17 +136,41 @@ unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, 
 
 void make_index(INDEX *r, unsigned char *b, int s) {
 
-  int    loop, size, o;
+  int    loop, size, o, t;
 
-  r->natural  =  natural_block_list    (b, s, &r->naturals);
-  r->crc      =  crc_list_sig          (b, r->natural, r->naturals, &r->ordereds);
-  r->ordered  =  order_tag_crc_offset  (r->natural, r->crc, r->naturals, r->ordereds);
-  r->tags     =  malloc ( 0x10000 * sizeof( u_int32_t) );
+  r->natural     =  natural_block_list    (b, s, &r->naturals);
+  r->crc         =  crc_list_sig          (b, r->natural, r->naturals, &r->ordereds);
+  r->ordered     =  order_tag_crc_offset  (r->natural, r->crc, r->naturals, r->ordereds);
+  r->tags        =  malloc ( 0x10000 * sizeof( TAG ) );
 
-  for ( loop = 0; loop < 0xffff ; )  r->tags[loop++] = 0xffffffff;
+  for ( loop = 0; loop < 0xffff ; )  {
+    r->tags[loop  ].index = 0xffffffff;
+    r->tags[loop++].range = 0x0;
+  }
 
   loop  =  r->ordereds - 1;
-  while ( loop >= 0 )
-    r->tags[ crc_tag ( r->crc[ r->ordered[loop] ] ) ]  =  loop--;
+  while ( loop >= 0 )  {
+    t = crc_tag ( r->crc[ r->ordered[loop] ] );
+    r->tags[ t ].range++;
+    r->tags[ t ].index = loop--;
+  }
+
+
+/*
+
+  for    ( loop  =  0;  loop  <  0x10000;              loop++ )
+    fprintf(stderr, "tag = %i range = %i\n", loop, r->tags[loop].range);
+     
+  for    ( loop  =  0;  loop  <  0x10000;              loop++ )
+    for  ( o     =  0;  o     <  r->tags[loop].range;  o++ ) {
+      if ( loop != crc_tag ( r->crc[r->ordered[ r->tags[loop].index + o]] ) )
+        fprintf(stderr, "Ordering is faulty\n" );
+      if ( ( o > 0 ) &&
+           ( r->crc[r->ordered[ r->tags[loop].index + o - 1]].dword >
+             r->crc[r->ordered[ r->tags[loop].index + o]].dword
+         ) ) fprintf(stderr, "Ordering is faulty 2\n");
+    }
+
+*/
 
 }

@@ -2,6 +2,11 @@
 #include <sys/types.h>
 #include "adler32.h"
 
+typedef struct TAG {
+  u_int32_t	index;
+  u_int32_t	range;
+} TAG;
+
 
 typedef struct INDEX {
 /*  LINE		*natural;  */
@@ -10,7 +15,7 @@ typedef struct INDEX {
   u_int32_t	 naturals;
   u_int32_t	*ordered;
   u_int32_t	 ordereds;
-  u_int32_t	*tags;
+  TAG		*tags;
 } INDEX;
 
 

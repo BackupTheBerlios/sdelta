@@ -67,3 +67,12 @@ Very large files will result in less swap
 thrashing during sdelta patch generation.
 Compressed size of sdelta patches may either 
 increase or decrease a little due to these changes.
+
+Mon Jan  3 21:00:43 UTC 2005	20040103	Kyle Sallee
+Added leap frogging to expedite the location of the first
+potential matching block resulting in a huge speed gain 
+proportional to the size of the files used to generate a delta.
+Thanks goes to Pavel Gorshkov <svinn@gmx.net> for introducing
+a one line change in blocks.c that slightly improve the speed 
+of which the natural block list is generated for files that 
+have lines exceeding 127 bytes.
