@@ -18,11 +18,42 @@ Please read LICENSE if you have not already
 #endif
 
 
+/*
+This is Kyle Sallee's implementation of Mark Adler's
+excellent and fast 32-bit cyclic redundancy check.
+An alternate example and longer explanation of adler32
+is available at http://www.ietf.org/rfc/rfc1950.txt
+This implementation is accurate only for block sizes
+less than 257 bytes.
+*/
+
+static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
+  u_int32_t	s1, s2;
+  DWORD		w;
+
+  s1 = 1;
+  s2 = 0;
+
+  for ( ; s > 0 ; s--, b++)  {
+      s1   += *b;
+      s2   += s1;
+  }
+
+  if  (  s2 < 0xfff10  )  while  ( s2 >= 0xfff1 )  s2 -= 0xfff1;
+  else                                             s2 %= 0xfff1;
+
+  w.word.low   =  ( u_int16_t )s1;
+  w.word.high  =  ( u_int16_t )s2;
+
+  return  w.dword;
+}
+
+
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *a, *max, *maxp;
   u_int32_t		i;
-  u_int32_t		count;
+  /* u_int32_t		count; */
 
   t    =  r    =  (u_int32_t *) malloc(s + 64);
   max  =  b + s;
@@ -117,7 +148,7 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
   static int  compare_crc (const void *v0, const void *v1)  {
     u_int32_t	 p0,  p1;
     DWORD        c0,  c1;
-    int          diff;
+    /* int          diff; */
 
     p0  =  *(u_int32_t *)v0;
     p1  =  *(u_int32_t *)v1;
@@ -172,7 +203,7 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
 
 void make_index(INDEX *r, unsigned char *b, int s) {
 
-  int    loop, size, o, t;
+  /* int    loop, size, o, t; */
 
   r->natural     =  natural_block_list  (b, s, &r->naturals);
   r->crc         =  crc_list_sig        (b, r->natural, r->naturals, &r->ordereds);
@@ -182,7 +213,7 @@ void make_index(INDEX *r, unsigned char *b, int s) {
 /*
   for    ( loop  =  0;  loop  <  0x10000;              loop++ )
     fprintf(stderr, "tag = %i range = %i\n", loop, r->tags[loop].range);
-     
+
   for    ( loop  =  0;  loop  <  0x10000;              loop++ )
     for  ( o     =  0;  o     <  r->tags[loop].range;  o++ ) {
       if ( loop != crc_tag ( r->crc[r->ordered[ r->tags[loop].index + o]] ) )
