@@ -49,18 +49,38 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 }
 
 
+static inline unsigned char	bp(unsigned char ch) {
+/* Null padding is not matchable at start of block sequence.
+   Amount of blocks greatly increases.
+   Generates smaller bzip2 and 7za compressible patches
+   Generates sdelta patches faster.
+   Wastes much more memory.
+ */
+  return  ( ch != 0x0a ) && ( ch != 0x00 );
+}
+
+
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
   u_int32_t		i;
 
+#ifdef SDELTA_2
+  t    =  r    =  (u_int32_t *) malloc(s*4 + 64);
+#else
   t    =  r    =  (u_int32_t *) malloc(s + 64);
+#endif
+
   max  =  b + s;
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    for (maxp = MIN(p + MAX_BLOCK_SIZE, max); *p++ != 0x0a && p < maxp;);
-  }
+#ifdef SDELTA_2
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); bp(*p++)     && p < maxp;);
+#else
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); *p++ != 0x0a && p < maxp;);
+#endif
+  };
 
   *t  =  s;
   i   =  ( t - r );
