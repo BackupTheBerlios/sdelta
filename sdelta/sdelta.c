@@ -203,7 +203,7 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   FOUND			found;
   unsigned int		count, line, size, total, where, limit;
   u_int16_t		tag;
-  DWORD			crc, fcrc;
+  DWORD			crc0, crc1, fcrc0, fcrc1;
 #ifdef USE_MMAP
   struct stat		st;
   size_t		from_mmap_size, to_mmap_size;
@@ -273,23 +273,42 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
 
   while  ( to.index.naturals  >  to.block )  {
 
-    if   (              to.index.crc[to.block].dword != 0xfff1fff1 )  {
-      crc.dword      =  to.index.crc[to.block].dword;
-      tag            =  crc_tag ( crc );
+    if   (              to.index.crc[to.block    ].dword != 0xfff1fff1 )  {
+      crc0.dword     =  to.index.crc[to.block    ].dword;
+      crc1.dword     =  to.index.crc[to.block + 1].dword;
+      tag            =  crc_tag ( crc0 );
       where          =  from.index.tags[tag];
-      match.count    =  0;
+      match.count    =  1;
          to.limit    =  to.index.naturals - to.block;
 
-      while ( ( where       <  from.index.ordereds                      ) &&
-              ( from.block  =  from.index.ordered[where]                ) &&
-              ( fcrc.dword  =  from.index.crc[from.block].dword         ) &&
-              ( tag         == crc_tag(fcrc)                            ) &&
-              ( crc.dword   >= fcrc.dword                               )
-            ) {
+      while ( ( where        <   from.index.ordereds               ) &&
+              ( from.block   =   from.index.ordered[where]         ) &&
+              ( fcrc0.dword  =   from.index.crc[from.block].dword  ) &&
+              ( tag          ==  crc_tag(fcrc0)                    ) &&
+              (  crc0.dword  >   fcrc0.dword                       )
+            )  where++;
 
-        if ( crc.dword == fcrc.dword ) {
+      fcrc1.dword  =  crc1.dword + 1;
 
-          count       =  1;
+      while ( ( where        <   from.index.ordereds               ) &&
+              ( from.block   =   from.index.ordered[where]         ) &&
+              ( fcrc0.dword  =   from.index.crc[from.block].dword  ) &&
+              (  crc0.dword  ==  fcrc0.dword                       ) &&
+              ( fcrc1.dword  =   from.index.crc[from.block+1].dword  ) &&
+              (  crc1.dword  >   fcrc1.dword                       )
+            )  where++;
+
+      if ( ( crc0.dword == fcrc0.dword ) &&
+           ( crc1.dword == fcrc1.dword )
+         ) {
+
+        while ( ( where        <   from.index.ordereds                 ) &&
+                ( from.block   =   from.index.ordered[where]           ) &&
+                ( fcrc1.dword  =   from.index.crc[from.block+1].dword  ) &&
+                ( crc1.dword   ==  fcrc1.dword                         )
+              ) {
+
+          count       =  2;
           from.limit  =  from.index.naturals - from.block;
 
           if ( to.limit > from.limit )
@@ -312,13 +331,11 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
               count  =  0;
             } else  count--;
           }
+          where++;
         }
-        where++;
       }  /* finished finding matches for to.block */
 
-      if ( ( match.count > 0 ) &&
-           ( from.index.natural[match.line + match.count + 1] -
-             from.index.natural[match.line                  ] > 50 ) )  {
+      if ( match.count > 1 ) {
         found.pair[found.count].to      =     to.block;
         found.pair[found.count].from    =  match.line;
         found.pair[found.count].count   =  match.count;

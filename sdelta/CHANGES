@@ -58,3 +58,12 @@ Made changes and improvements resulting in
 # make bsd
 now compiles the source with the correct 
 library links for use on FreeBSD.
+
+Sat Jan  1 21:57:59 UTC 2005	20040101	Kyle Sallee
+Made changes and improvements resulting in
+25% speed increase in sdelta patch generation
+over the previous day's release.
+Very large files will result in less swap 
+thrashing during sdelta patch generation.
+Compressed size of sdelta patches may either 
+increase or decrease a little due to these changes.

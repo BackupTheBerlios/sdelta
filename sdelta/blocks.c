@@ -95,20 +95,31 @@ unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, 
     DWORD        c0,  c1;
     int          diff;
 
-    c0  =  cr[ *(u_int32_t *)v0 ];
-    c1  =  cr[ *(u_int32_t *)v1 ];
+    p0  =  *(u_int32_t *)v0;
+    p1  =  *(u_int32_t *)v1;
+
+    c0  =  cr[ p0 ];
+    c1  =  cr[ p1 ];
 
     diff  =  crc_tag ( c0 )  -  crc_tag ( c1 );
 
-    if ( diff == 0 )  {
+    if ( diff == 0 )
+    {
             if  ( c0.dword > c1.dword )  diff =  1;
       else  if  ( c0.dword < c1.dword )  diff = -1;
-      else  {
-        if  ( *( u_int32_t *)v0 > *( u_int32_t *)v1 )  diff =  1;
-        else                                           diff = -1;
+      else
+      {
+        c0    =  cr[ p0 + 1 ];
+        c1    =  cr[ p1 + 1 ];
+              if  ( c0.dword > c1.dword )  diff =  1;
+        else  if  ( c0.dword < c1.dword )  diff = -1;
+        else
+        {
+          if  ( p0 > p1 )  diff =  1;
+          else             diff = -1;
+        }
       }
     }
-
     return  diff;
   }
 
@@ -122,49 +133,6 @@ unsigned int  *order_tag_crc_offset ( u_int32_t *bl, DWORD *cr, unsigned int c, 
 
 }
 
-
-/*
-unsigned int  *order_tag_crc_offset ( LINE *n, unsigned int c, unsigned int *b ) {
-
-  u_int32_t    *r;
-  unsigned int	l;
-  unsigned int  t;
-  u_int32_t     c0, c1;
-
-  static int  compare_block (const void *v0, const void *v1)  {
-    LINE	*p0, *p1;
-    int		 diff;
-
-    p0  =  (LINE *)( n + *(unsigned int *)v0 );
-    p1  =  (LINE *)( n + *(unsigned int *)v1 );
-
-    diff  =  crc_tag ( p0->crc )  -  crc_tag ( p1->crc );
-
-    if ( diff == 0 )  {
-      c0  =  p0->crc.dword;
-      c1  =  p1->crc.dword;
-            if  ( c0 > c1 )  diff =  1;
-      else  if  ( c0 < c1 )  diff = -1;
-      else  if  ( p0->offset > p1->offset )  diff =  1;
-      else                                   diff = -1;
-    }
-
-    return  diff;
-  }
-
-  r   =  (u_int32_t *)  malloc (    c * sizeof(u_int32_t) );
-
-  for ( l = t = 0; l < c; l++ )
-    if  ( n[l+1].offset - n[l].offset > lazy )  r[t++]  =  l;
-
-  r   =  (u_int32_t *) realloc ( r, t * sizeof(u_int32_t) );
-  *b  =  t;
-
-  qsort(r, t, sizeof(u_int32_t), compare_block);
-  return  r;
-
-}
-*/
 
 void make_index(INDEX *r, unsigned char *b, int s) {
 
