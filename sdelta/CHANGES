@@ -5,35 +5,35 @@ making this sdelta backward compatible with 20040926
 
 
 Sun Dec  5 01:15:23 UTC 2004	20041205	Kyle Sallee
-Pavel Gorshkov <svinn@gmx.net> reports detailed information 
-about how sdlta crashes on BSD which points toward a bug at 
-the end of function natural_block_list that reallocates the 
+Pavel Gorshkov <svinn@gmx.net> reports detailed information
+about how sdlta crashes on BSD which points toward a bug at
+the end of function natural_block_list that reallocates the
 memory for the natural block list smaller than it need be.
-Intersting how linux gives a few more bytes 
+Intersting how linux gives a few more bytes
 for sloppy memory allocation than BSD allows.
 
 
 Sun Dec  5 22:54:11 UTC 2004	20041206	Kyle Sallee
-Pavel Gorshkov <svinn@gmx.net> provided a patch for 
+Pavel Gorshkov <svinn@gmx.net> provided a patch for
 adler32.h that corrects endian detection on BSD.
 sdelta is now confirmed to compile and run properly on BSD.
 Thanks Pavel Gorshkov!
 
 File ADVANCED has been updated with the following information:
-1. Results of testing sdelta with the standard dictionary file 
+1. Results of testing sdelta with the standard dictionary file
 on a large corpus of source tarballs and the problems and
 benfits of using generic dictionary patching.
-2. Potential use of 7zip high compression technology with sdelta 
-technology and it's current savings over bzip2 for compressing a 
+2. Potential use of 7zip high compression technology with sdelta
+technology and it's current savings over bzip2 for compressing a
 large and mostly compressible Sorcerer Install/Rescue ISO9660 image.
 
 
 Wed Dec  8 00:03:12 UTC 2004	20041208	Kyle Sallee
 Pavel Gorshkov <svinn@gmx.net> provided a patch for
 adler32.h that corrects endian detection on Solaris.
-Problem with malloc and realloc on BSD may cause 
+Problem with malloc and realloc on BSD may cause
 problems creating and using large sdelta patches
-and creates a signifigant performance degredation 
+and creates a signifigant performance degredation
 over sdelta on linux.  To avoid the problem one may
 want to install libdlmalloc from /usr/ports/devel/libdlmalloc
 and then gcc -O2 -pipe *.c -ldlmalloc -lmhash -o sdelta
@@ -53,10 +53,10 @@ alternate malloc is far slower than a malloc.
 
 
 Fri Dec 31 20:39:52 UTC 2004	20041231	Kyle Sallee
-Made changes and improvements resulting in 
+Made changes and improvements resulting in
 30% speed increase in sdelta patch generation.
 # make bsd
-now compiles the source with the correct 
+now compiles the source with the correct
 library links for use on FreeBSD.
 
 
@@ -64,25 +64,25 @@ Sat Jan  1 21:57:59 UTC 2005	20040101	Kyle Sallee
 Made changes and improvements resulting in
 25% speed increase in sdelta patch generation
 over the previous day's release.
-Very large files will result in less swap 
+Very large files will result in less swap
 thrashing during sdelta patch generation.
-Compressed size of sdelta patches may either 
+Compressed size of sdelta patches may either
 increase or decrease a little due to these changes.
 
 
 Mon Jan  3 21:00:43 UTC 2005	20040103	Kyle Sallee
 Added leap frogging to expedite the location of the first
-potential matching block resulting in a huge speed gain 
+potential matching block resulting in a huge speed gain
 proportional to the size of the files used to generate a delta.
 Thanks goes to Pavel Gorshkov <svinn@gmx.net> for introducing
-a one line change in blocks.c that slightly improve the speed 
-of which the natural block list is generated for files that 
+a one line change in blocks.c that slightly improve the speed
+of which the natural block list is generated for files that
 have lines exceeding 127 bytes.
 
 
 Tue Jan  4 23:03:29 UTC 2005	20040104	Kyle Sallee
 Made sorting faster.
-Eliminated a bug in sdelta.c where I placed a 
+Eliminated a bug in sdelta.c where I placed a
 break when I really wanted a continue command.
 
 
@@ -94,25 +94,25 @@ performance and less swapping when making sdelta patches of very
 large files like the + 500M Sorcerer Install/Rescue ISO9660.
 
 Introduced POSIX threading to sdelta generation that should
-improve speed of sdelta generation on SMP boxes with adequate 
+improve speed of sdelta generation on SMP boxes with adequate
 RAM to avoid swapping or re-reading of mmaped files.
 
 
 Sun Jan 16 22:11:32 UTC 2005	20040117	Kyle Sallee
 Reviewed source to remove some insignifigantly buggy code.
 Modified the way tag values are calculated to require the
-crc for the desired block and following block to create 
+crc for the desired block and following block to create
 greater entropy in the ordered block list which yields
 faster searches.
 
 
 Wed Jan 26 10:54:30 UTC 2005			Kyle Sallee
-Modified code to use 64 bit integers where 
+Modified code to use 64 bit integers where
 applicable instead of 32 bit integers.
 This change causes minor slow down on 32 bit architecture
 for occasional unnecessary 32 bit memory access.
 However it may be faster on 64 bit architecture
-where it can fetch 64 bits at a time and save 
+where it can fetch 64 bits at a time and save
 on an additional indexing.
 
 
@@ -123,7 +123,7 @@ generation from mhash to openssl since openssl is faster.
 
 Fri Jan 28 21:52:11 UTC 2005	20050129	Kyle Sallee
 Added sd BASH 3.0 script to wrap invocation of sdelta.
-sd provides transparent compression and decompression 
+sd provides transparent compression and decompression
 of source tarballs and sdelta patches.
 This aught to make sdelta easer for POSIX novices.
 
@@ -133,7 +133,7 @@ Fixed typos in Makefile reported by Ady Deac <adydeac@yahoo.com>
 
 
 Tue Feb 22 02:25:32 UTC 2005	20050222	Kyle Sallee
-Initial release and testing of sdreq client for 
+Initial release and testing of sdreq client for
 selecting sdelta patches to upgrade wanted sources,
 make the request for generation of patches,
 download the patches,
@@ -146,7 +146,7 @@ and the server side code is completely debugged.
 
 Tue Mar  8 01:34:55 UTC 2005	20050308	Kyle Sallee
 The PPR now accepts two types of requests:  patches and tarballs.
-However both the patch names and tarball 
+However both the patch names and tarball
 names must not specify a compression type.
 Allowed:     bash-2.05b.tar-bash-2.05b.tar.sd
              bash-2.05b.tar
@@ -158,13 +158,18 @@ whether that patch for download may be called
 bash-2.05b.tar-bash-2.05b.tar.sd.bz2  or
 bash-2.05b.tar-bash-2.05b.tar.sd.7z
 sdreq downloads the patch that is available.
-Consequently, sdreq now requires p7zip installed since 
+Consequently, sdreq now requires p7zip installed since
 some patches may not be available bzip2 compressed.
 This change is entirely transparent to those using the sdreq client.
 
 If you want a bash-2.05.tar.bz2 tarball then touch that
 in your want directory and it will probably be provided.
 If no suitable patch can be created then the smallest
-bzip2 or 7za compressed tarball will be downloaded 
+bzip2 or 7za compressed tarball will be downloaded
 instead and the compression type will be translated
 to the type specified by the wanted filename.
+
+
+Wed Mar 16 01:32:45 UTC 2005	20050316	Kyle Sallee
+The sdreq client has been enhanced to generate better
+matches between the sources a box has and wanted sources.
