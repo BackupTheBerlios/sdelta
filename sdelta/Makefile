@@ -1,5 +1,8 @@
-CC     := gcc
-PREFIX := /usr/bin
+CC      := gcc
+PREFIX  ?= /usr/bin
+CFLAGS  ?= -Os -pipe
+CFLAGS  += -finline-functions
+LDFLAGS ?= -Wl,-s
 
 sdelta: *.c *.h
 	 $(CC) $(CFLAGS) $(LDFLAGS) *.c -lmhash -lpthread -o sdelta
