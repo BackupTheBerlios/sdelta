@@ -1,22 +1,4 @@
-1.
+1. Depreciate use of stdin with sdelta patch application.
 
-Mallocing a value and then reallocing once it's size is about 
-to exceed the original estimate is terribly slow on FreeBSD,
-although it has no signifigant impact on Linux boxes.
-The next version of sdelta, sdelta2 will probably have
-in the sdelta header file sizes for both the sdelta 
-and from file, or a combined size for both.
-That way the precisely sized sdelta header can be read 
-into a buffer.  Then, a second precisely sized buffer
-can be malloced to read the rest of the data from stdin.
-
-
-2.
-
-Locate other places of malloc and realloc in sdelta code
-and attempt to determine precise memory allocation without
-having to realloc to shrink a hunk of memory.
-Shrinking previously allocated memory on Linux works,
-but on FreeBSD it may not return that memory?
-FreeBSD boxes require an enormous amount of memory 
-to run sdelta as compared to sdelta on linux.
+Everything looks acceptible at this point.
+Both sdelta patch generation and application are very fast.
