@@ -214,12 +214,9 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   found.count       =  0;
   to.block          =  0;
 
-  while  ( to.index.naturals                >  to.block )  {
+  while  ( to.index.naturals  >  to.block )  {
 
-    if   ( to.index.natural[to.block+1] -
-           to.index.natural[to.block  ]  >  4)  {
-/*         to.index.natural[to.block  ]  >  lazy )  {  */
-
+    if   (              to.index.crc[to.block].dword != 0xfff1fff1 )  {
       crc.dword      =  to.index.crc[to.block].dword;
       tag            =  crc_tag ( crc );
       where          =  from.index.tags[tag];
