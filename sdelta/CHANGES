@@ -114,3 +114,15 @@ for occasional unnecessary 32 bit memory access.
 However it may be faster on 64 bit architecture
 where it can fetch 64 bits at a time and save 
 on an additional indexing.
+
+
+Fri Jan 28 21:52:11 UTC 2005			Kyle Sallee
+Thanks goes to Pavel Gorshkov <svinn@gmx.net> switching SHA1
+generation from mhash to openssl since openssl is faster.
+
+
+Fri Jan 28 21:52:11 UTC 2005	20050129	Kyle Sallee
+Added sd BASH 3.0 script to wrap invocation of sdelta.
+sd provides transparent compression and decompression 
+of source tarballs and sdelta patches.
+This aught to make sdelta easer for POSIX novices.

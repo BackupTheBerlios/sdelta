@@ -1,53 +1,69 @@
 Terse explanation:
 
-To generate a patch:  $ sdelta  old  new    >  patch
-To apply    a patch:  $ sdelta  old  patch  >  new
+sdelta creates and applies patches of uncompressed tarballs.
+sd as a wrapper for sdelta handles compression and decompression
+of files and patches automatically and transparently.
 
+To generate a patch:  $ sd  old_file  new_file    >  patch_file
+To apply    a patch:  $ sd  old_file  patch_file  >  new_file
 
-Verbose explanation:
+sd automatically will automatically detect and use
+   .tar.7z,     .tar.bz2,     .tar.gz,  .tgz,
+.sdelta.7z,  .sdelta.bz2,  .sdelta.gz,
+    .sd.7z,      .sd.bz2,      .sd.gz
 
-Here is an example where we generate a sdelta patch file
-for an upgrade of glibc from version 2.3.2 to version 2.3.3.
+sd has the following requirements:
+openssl, bash >= 3.0, file >= 4.10, 7za, bzip2, gzip and sdelta 
+programs must be installed and within the PATH for sd to work properly.
 
-First, generate the sdelta upgrade patch file.
+The following is an example for creating, 
+transferring and applying a sdelta patch file.
 
-$ sdelta  glibc-2.3.2.tar  glibc-2.3.3.tar  >  glibc-2.3.2-2.3.3.sdelta
+The source      box has files:  gcc-3.4.1.tar.bz2 and  gcc-3.4.3.tar.bz2
+The destination box has only:   gcc-3.4.1.tar.bz2
 
-Now compress it with your favorite compression program:
+First, create a sdelta patch file.
 
-$ bzip2                                glibc-2.3.2-2.3.3.tar.sdelta
-$ 7za    a  glibc-2.3.2-2.3.3.tar.7za  glibc-2.3.2-2.3.3.tar
-$ gzip  -9                             glibc-2.3.2-2.3.3.tar
+$ sd  gcc-3.4.1  gcc-3.4.3  gcc-3.4.1-gcc-3.4.3.sdelta.bz2
 
-956K  glibc-2.3.2-2.3.3.tar.7za
-1.1M  glibc-2.3.2-2.3.3.tar.bz2
-1.4M  glibc-2.3.2-2.3.3.tar.gz
+Next, send gcc-3.4.1-gcc-3.4.3.sdelta.bz2 to the destination box.
+Finally, run sd to apply the patch and generate the desired file.
 
-The better the compression program the smaller 
-the compressed sdelta patch file will be.
-Any of the above 3 is preferable to transfering 
-13M  glibc-2.3.3.tar.bz2  or
-17M  glibc-2.3.3.tar.bz2
+$ sd  gcc-3.4.1  gcc-3.4.1-gcc-3.4.3  gcc-3.4.3.tar.bz2
 
+Now the destination box has gcc-3.4.3.tar.bz2
 
-Now send the tiny sdelta patch to a box 
-that has only the old glibc source tarball.
+What if only the uncompressed tarball is desired instead?
 
-Finally, apply the patch to generate a new glibc source tarball:
+$ sd  gcc-3.4.1  gcc-3.4.1-gcc-3.4.3  gcc-3.4.3
 
-sdelta  glibc-2.3.2.tar  glibc-2.3.2-2.3.3.tar.sdelta  >  glibc-2.3.3.tar
+Now sd created gcc.3.4.3.tar
 
-Now you can extract the new glibc-2.3.3 source from the 
-tarball using $ tar -xf glibc-2.3.3.tar and begin compiling.
+What happens when the from and patch files are swapped?
 
-Note that sdelta works on uncompressed source tarballs.
-Doing a sdelta of glibc-2.3.2.tar.bz2 and glibc-2.3.3.tar.bz2
-will probably yield a horribily large sdelta patch file if
-it works at all.
+$ sd  gcc-3.4.1-gcc-3.4.3  gcc-3.4.1  gcc-3.4.3
 
-sdelta does work for generating patch files 
-for binary data and not just source tarballs.
-However with non text/source data compressed
-sdelta patch files may be larger than an 
-equivalently compressed xdelta patch file.
-Think sdelta for source and xdelta for binary patch files.
+sd still produces gcc-3.4.3.tar
+
+The first two file parameters may be complete or partial filenames.
+"gcc-3.4.3.tar.bz2"
+"gcc-3.4.3.tar"
+"gcc-3.4.3"
+All three file names above can all be used to 
+indicate the same file even when that file is actually:
+gcc-3.4.3.tar.gz
+However gcc-3.4 will not match gcc-3.4.3*
+
+The third file parameter must be named 
+appropriate for it to be compressed.
+If it ends with .7z .bz2 or .gz
+then it will be compressed with the 
+appropriate compression program.
+Otherwise it will not be compressed.
+The third file name must be complete
+and what is desired because that is
+precisely the filename that sd will output to.
+There is no guessing about what to call the third filename.
+
+Using sd to invoke sdelta should simplify the wielding 
+of compressed tarballs and compressed patch files.

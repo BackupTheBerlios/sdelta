@@ -2,3 +2,6 @@
 
 Everything looks acceptible at this point.
 Both sdelta patch generation and application are very fast.
+Several attempts to improve sdelta's match detection create
+marginal improvement if any at an extreme cost in speed and
+often memory.

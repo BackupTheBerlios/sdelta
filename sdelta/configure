@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo  "sdelta is copyright 2004 by Kyle Sallee, All Rights Reserved."
-echo  "sdelta requires the mhash library available from:"
-echo  "http://mhash.sourceforge.net"
-echo  "To build sdelta on Linux or Solaris issue # make"
-echo  "To build sdelta on FreeBSD issue # make bsd"
-echo  "Install sdelta issue # make install"
+echo  "sdelta is copyright 2004, 2005 by Kyle Sallee, All Rights Reserved."
+echo  "sdelta requires the openssl library available from: http://www.openssl.org"
+echo
+echo  "To build sdelta on Linux or Solaris issue  # make"
+echo  "To build sdelta on FreeBSD issue           # make  bsd"
+echo  "To install sdelta issue                    # make  install"

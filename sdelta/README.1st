@@ -1,6 +1,6 @@
 Recommended reading order of files:
 
-Know what a delta generator is or read README.
+If unfamiliar with delta generators please read README.
 Read INSTALL.
 Read USAGE.
 Read LICENSE.
