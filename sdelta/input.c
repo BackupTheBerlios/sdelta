@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.1 2005/01/08 22:01:47 svinn Exp $ */
+/* $Id: input.c,v 1.2 2005/01/08 22:09:21 svinn Exp $ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -62,7 +62,7 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	   memory we can encounter is MAP_ANON (that is, stdin) */
 
 	/* use malloc */
-#ifdef USE_MMAP_ANON_FOR_STDIN_INPUT
+#ifdef USE_MAP_ANON_STDIN
 	if (! b->is_mmaped) {
 #endif
 		/* if we know the exact size, add 1 byte */
@@ -71,7 +71,7 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 			fprintf(stderr, "%s: malloc(%u) failed\n", fname ? fname : "stdin", alloc_size);
 			exit(EXIT_FAILURE);
 		}
-#ifdef USE_MMAP_ANON_FOR_STDIN_INPUT
+#ifdef USE_MAP_ANON_STDIN
 	}
 #endif
 
@@ -134,7 +134,7 @@ void unload_buf(INPUT_BUF *b) {
 	if (! b->buf)
 		return;
 
-#if defined(USE_MMAP) || defined(USE_MMAP_ANON_FOR_STDIN_INPUT)
+#if defined(USE_MMAP) || defined(USE_MAP_ANON_STDIN)
 	if (b->is_mmaped) {
 		if (b->mmap_size && munmap(b->buf, b->mmap_size) == -1)
 			fprintf(stderr, "warning: munmap(0x%p, 0x%08X) failed\n", b->buf, b->mmap_size);
