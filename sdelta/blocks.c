@@ -12,13 +12,14 @@ Please read LICENSE if you have not already
 
 
 #include <sys/types.h>
+#include <sys/param.h>
 #include <stdio.h>
 
 #include "blocks.h"
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
-  unsigned char		*p, *a, *max;
+  unsigned char		*p, *a, *max, *maxp;
   u_int32_t		i;
   u_int32_t		count;
 
@@ -27,8 +28,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    a   =  p;
-    for (; *p++ != 0x0a  &&  p < max ;);
+    for (maxp = (a = p) + MIN(0x7f, max - p); *p++ != 0x0a && p < maxp;);
     if  ( ( p - a ) > 0x7f )  { p = a + 0x7f;  }
   }
 
