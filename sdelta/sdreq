@@ -1,5 +1,9 @@
 #!/bin/bash
 
+###############################################################
+# sdreq is copyright 2005 by Kyle Sallee, All rights reserved #
+# sdreq is distributed under the SPL version 1.1              #
+###############################################################
 
 load_config()  {
   if    [     -x  ${SDREQ_CONFIG:=~/.sdreq/config}  ]

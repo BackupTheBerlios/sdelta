@@ -4,6 +4,21 @@ sdreq is very simple and designed to be invoked by
 command line and/or scripts to accomplish it's task
 without any human interaction.
 
+To use sdreq you will require installed:
+bash, bzip2 curl, coreutils, dialog, find, grep, gzip, p7zip, and sed.
+
+bzip2 p7zip and gzip are compression programs.
+curl is the download agent.
+The rest are utilities used by the sd and sdreq shell script.
+
+p7zip is a compression program that can frequently produce
+tarballs that are compressed 30% smaller than bzip2.
+Whe the Public Patch Repository provides tarballs and
+patches for download those tarballs and patches may be
+compressed with 7za from p7zip or bzip2.
+Therefore, you must have both installed to 
+have tarballs and patches decompressed.
+
 The first time sdreq is run it will bring you to a configuration menu.
 The configuration menu allows certain features
 to be enabled or disabled for all runs.
@@ -119,11 +134,6 @@ Q. Where does ibiblio.org/sdelta get sources from?
 
 A. It has an approved and reviewed list of servers
    that it will download sources from as necessary.
-
-
-Q. What is the list of those servers?
-
-A. http://ibiblio.org/sdelta/servers.html
 
 
 Q. What if the source tarball I want is not hosted on those servers?
