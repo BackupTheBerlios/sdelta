@@ -102,7 +102,7 @@ DWORD	*crc_list_sig ( unsigned char *b, u_int32_t *n, int c, int *s) {
   while ( x > 0 )  {
     size = n[1] - n[0];
     if  ( size > 4 )  l->dword = adler32 ( b + *n, size );
-    else           {  l->dword = 0xfff1fff1;  i++;  }
+    else  {  i++;     l->dword = 0xfff1fff1;  }
 
     l++;
     n++;
@@ -134,7 +134,7 @@ u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
   int  loop;
 
   list = ( u_int16_t *) malloc( c * sizeof(u_int16_t) );
-  for( loop = 0 ; loop < c ; loop++ )  list[loop] = crc_tag(cr[loop]);
+  for( loop = 0 ; c > 0 ; c--, loop++ )  list[loop] = crc_tag(cr[loop]);
   return  list;
 }
 
