@@ -1,5 +1,5 @@
 CC      := gcc
-PREFIX  ?= /usr/bin
+PREFIX  ?= /usr
 CFLAGS  ?= -Os -pipe
 CFLAGS  += -finline-functions
 LDFLAGS ?= -Wl,-s
@@ -15,7 +15,7 @@ clean:
 	rm -f sdelta
 
 bsd:  *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -DUSE_MMAP -lmhash -pthread -ldlmalloc -o sdelta
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lmhash -pthread -ldlmalloc -o sdelta
 
 install: sdelta
 	install -m 0755  sdelta          $(PREFIX)/bin
