@@ -118,7 +118,7 @@ Patches can also be uploaded directly to a FTP server."
 run_config()  {
   if    [  -f  /usr/bin/dialog  ]  &&
         [  -x  /usr/bin/dialog  ]  &&
-        !      /usr/bin/dialog  --version  |  grep  -q  "0\.3\|0\.4"
+        !      /usr/bin/dialog  --version  2>&1  |  grep  -q  "0\.[3-4]"
   then  config_menu
   else  config_text
   fi
