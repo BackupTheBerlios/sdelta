@@ -27,10 +27,25 @@ sdelta is a line blocking dictionary compressor.
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "mmap.h"
 #include "sdelta.h"
 
+#ifdef USE_MADVISE
+#ifndef USE_MMAP
+#define USE_MMAP
+#endif
+
+#define MADVISE(buf,len) do { \
+    if (madvise((buf), (len), MADV_RANDOM) < 0) { \
+	perror("posix_madvise"); \
+	exit(EXIT_FAILURE); \
+    } \
+} while(0)
+#else
+#define MADVISE(buf,len)
+#endif /* USE_MADVISE */
 
 char	magic[]    =  { 0x13, 0x04, 00, 00 };
 int	verbosity  =  0;
@@ -225,22 +240,40 @@ void  make_sdelta(char *b1, size_t s1, char *b2, size_t s2)  {
   unsigned int		count, line, size, total, where, start, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
+  pthread_t		from_thread, to_thread;
 
-  from.buffer = b1;
-  to.buffer   = b2;
-  from.size   = s1;
-  to.size     = s2;
 
+void  *prepare_from(void *nothing)  {
   td  =  mhash_init	( MHASH_SHA1 );
          mhash		( td, from.buffer, from.size );
          mhash_deinit	( td, from.sha1 );
 
   make_index ( &from.index, from.buffer, from.size );
   madvise    (              from.buffer, from.size, MADV_RANDOM );
+}
 
+void  *prepare_to(void *nothing)  {
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals );
+}
+
+  from.buffer = b1;
+  to.buffer   = b2;
+  from.size   = s1;
+  to.size     = s2;
+
+  pthread_create( &from_thread, NULL, prepare_from, NULL );
+  pthread_create(   &to_thread, NULL, prepare_to,   NULL );
+  pthread_join  (  from_thread, NULL );
+  pthread_join  (    to_thread, NULL );
+
+
+/*
+  prepare_from(NULL);
+  prepare_to(NULL);
+*/
+
   found.count       =  0;
   to.block          =  0;
 
