@@ -173,6 +173,13 @@ Here is how it compared on medium and small source tarballs:
 33759  polypaudio-0.3-0.4.tar.sdelta.bz2	<- 26% smaller bzip2 sdelta
 45088  polypaudio-0.3-0.4.tar.xdelta.bz2	<- larger bzip2 xdelta
 
+
+The following section on SDELTA_LAZY no longer applies.
+That was mere for demonstration purpose and has no impact
+upon performance and the check has been replaced by a static value.
+You must edit sdelta.c and search for lazy and modify the code
+if you want to do some lazy tests.
+
 sdelta by default will match lines that are 5 bytes or longer.
 The smaller minimal block length offers no advantage 
 for sdelta over xdelta's 16 byte blocks.
@@ -199,6 +206,9 @@ difference between the compressed sdelta and xdelta
 patch file will vary depending on the quality of the compressor used.
 1.4M glibc-2.3.2-2.3.3.tar.sdelta.gz
 1.9M glibc-2.3.2-2.3.3.tar.xdelta.gz
+vs.
+1.1M glibc-2.3.2-2.3.3.tar.sdelta.bz2
+1.8M glibc-2.3.2-2.3.3.tar.xdelta.bz2
 
 Using gzip -9 instead of bzip2 -9 the proportional size difference
 between the two patch files is less than when using bzip2.

@@ -29,7 +29,7 @@ LINE	*natural_block_list(unsigned char *b, int s, int *c) {
   for ( p = b ; p < max ; t++) {
     t->offset   =  p - b;
     a           =  p;
-    for ( count = 1; *p++ != 0x0a ; count++ );
+    for ( count = 1; *p++ != 0x0a  &&  p < max ; count++ );
 
     if ( count > 0x7f ) { p = a + 0x7f; count = 0x7f; }
 

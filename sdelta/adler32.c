@@ -17,9 +17,16 @@ u_int32_t adler32(unsigned char *b, u_int32_t s) {
   s2 = 0;
 
   for ( ; s > 0 ; s--, b++)  {
-    s1   += *b;  if  ( s1 >= 65521 )  s1 -= 65521;
-    s2   += s1;  if  ( s2 >= 65521 )  s2 -= 65521;
+      s1   += *b;
+      s2   += s1;
+/*    s1   += *b;  if  ( s1 >= 65521 )  s1 -= 65521;
+      s2   += s1;  if  ( s2 >= 65521 )  s2 -= 65521;
+*/
   }
+
+  while  ( s1 >= 65521 )  s1 -= 65521;
+  while  ( s2 >= 65521 )  s2 -= 65521;
+
 
   w.word.low   =  ( u_int16_t )s1;
   w.word.high  =  ( u_int16_t )s2;
