@@ -21,7 +21,8 @@ u_int32_t adler32(unsigned char *b, u_int32_t s) {
       s2   += s1;
   }
 
-  while  ( s2 >= 0xfff1 )  s2 -= 0xfff1;
+  if  (  s2 < 0x7ff88  )  while  ( s2 >= 0xfff1 )  s2 -= 0xfff1;
+  else                                             s2 %= 0xfff1;
 
   w.word.low   =  ( u_int16_t )s1;
   w.word.high  =  ( u_int16_t )s2;
