@@ -16,7 +16,7 @@ compression()  {
 
 
 is_sdelta()  {
-  file  -b  -m  /usr/share/sdelta/magic  "$1"  |
+  file  -b  -m  $SD_MAGIC  "$1"  |
   grep  -q  sdelta
 }
 
@@ -118,9 +118,11 @@ then  echo  $"Upgrade to BASH version 3.0 or later to use this wrapper."
 fi
 
 
-if    !  [  -f  /usr/share/sdelta/magic  ]
-then  echo  $"Unable to identify sdelta patches without /usr/share/sdelta/magic installed."
-      echo  $"Please install or reinstall sdelta."
+if    !  [  -f  ${SD_MAGIC:=/usr/share/sdelta/magic}  ]
+then
+  echo  $"Unable to identify sdelta patches without $SD_MAGIC installed."
+  echo  $"Please reinstall sdelta or export SD_MAGIC"
+  echo  $"to specify the location of the file containing sdelta's magic numbers.
 fi
 
 
