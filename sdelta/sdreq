@@ -34,6 +34,20 @@ save_config()  {
 }
 
 
+front_flip()  {
+  sed  -r  "s:^X11R6(.*)(-src[1-9]).tar:X11R6\2\1.tar:
+            s:^XFree86(-.*)(-src-[1-9]).tar:XFree86\2\1.tar:
+            s:^TORCS(-.*)(-src.*).tar:TORCS\2\1.tar:"
+}
+
+
+back_flip()  {
+  sed  -r  "s:^X11R6(-src[1-9])(.*).tar:X11R6\2\1.tar:
+            s:^XFree86(-src-[1-9])(-.*).tar:XFree86\2\1.tar:
+            s:^TORCS(-src.*)(-.*).tar:TORCS\2\1.tar:"
+}
+
+
 not()  {  if  $1;  then  echo  "false";  else  echo  "true";  fi  }
 
 
@@ -190,13 +204,16 @@ request_patches()  {
 
 
 match()  {
-  local  BEST  FILE  FOUND  LEN
+  local  BEST  FILE  FOUND  LEN  START
 
   LEN="${#1}"
-  (( LEN = LEN - 5  ))
+  (( LEN = LEN - 4  ))
+
+  START="$(  echo  "$1"  |  front_flip  )"
 
   while
-    FOUND="$(  grep  "^${1:0:$LEN}"  $SDREQ_DIR/tmp/have.tars  )"
+    FOUND="$(  grep  "^${START:0:$LEN}"  $SDREQ_DIR/tmp/have.tars  |
+               back_flip  )"
     [  -z  "$FOUND"  ]  &&  ((  LEN > 2  ))
   do
     ((  LEN--  ))
@@ -233,10 +250,11 @@ sdelta_names()  {
 
 
 want() {
-  list        $SDREQ_DIR/have/           |
-  tee         $SDREQ_DIR/tmp/have.files  |
-  basenames                              |
-  tars    >   $SDREQ_DIR/tmp/have.tars
+  list           $SDREQ_DIR/have/           |
+  tee            $SDREQ_DIR/tmp/have.files  |
+  basenames                                 |
+  tars                                      |
+  front_flip  >  $SDREQ_DIR/tmp/have.tars
 
   list_empty  $SDREQ_DIR/want/  |
   basenames                     |
