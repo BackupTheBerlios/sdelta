@@ -285,6 +285,8 @@ void  *prepare_sha1(void *nothing)  {
       leap(0x10);
       leap(0x8);
       leap(0x4);
+      leap(0x2);
+      leap(0x1);
 
       match.count    =  1;
          to.limit    =  to.index.naturals - to.block;
@@ -321,10 +323,13 @@ void  *prepare_sha1(void *nothing)  {
           limit  =      from.limit;  else
           limit  =        to.limit;
 
-        while  ( ( count < limit )  &&
-                 ( from.index.crc[from.block + count ].dword ==
-                     to.index.crc[  to.block + count ].dword ) )
-          count++;
+        if ( ( count > match.count ) ||
+             ( from.index.crc[from.block + match.count ].dword ==
+                 to.index.crc[  to.block + match.count ].dword ) )
+          while  ( ( count < limit )  &&
+                   ( from.index.crc[from.block + count ].dword ==
+                       to.index.crc[  to.block + count ].dword ) )
+            count++;
 
         while ( count > match.count ) {
           if ( memcmp( from.index.natural[from.block] + from.buffer,
