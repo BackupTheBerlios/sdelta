@@ -573,7 +573,6 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
 
   delta.offset  =  0;
    from.offset  =  0;
-   from.offset  =  0;
      to.block   =  0;
   delta.block   =  0;
 
