@@ -149,5 +149,5 @@ RET=$?
 if    [  "$R1"  !=  "$D1"  ];  then  rm  -f           "$D1";  fi
 if    [  "$R2"  !=  "$D2"  ];  then  rm  -f           "$D2";  fi
 if    ((  RET   ==  0     ));  then  compress  "$R3"  "$D3";
-                               else  exit  $RET
+                               else  rm  -f    "$R3"       ;  exit  $RET
 fi
