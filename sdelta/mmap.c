@@ -49,7 +49,7 @@ unsigned char *mmap_stdin(size_t *c) {
   unsigned char *b;
   size_t         s;
 
-  if ((b = mmap(NULL, MAX_MAP_ANON, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0)) == MAP_FAILED) {
+  if ((b = mmap(NULL, MAX_MAP_ANON, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == MAP_FAILED) {
     fprintf(stderr, "Problem mmaping %x bytes for stdin\n", MAX_MAP_ANON);
     exit(EXIT_FAILURE);
   }
