@@ -55,6 +55,9 @@ static inline unsigned char	bp(unsigned char ch) {
    Generates smaller bzip2 and 7za compressible patches
    Generates sdelta patches faster.
    Wastes much more memory.
+   Costs much more in CPU
+   This is a bad regression toward attempting 
+   to match at every offset.
  */
   return  ( ch != 0x0a ) && ( ch != 0x00 );
 }

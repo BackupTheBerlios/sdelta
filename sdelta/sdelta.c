@@ -158,7 +158,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   found.buffer[offset_unmatched_size++] = unmatched_size.byte.b2;
   found.buffer[offset_unmatched_size++] = unmatched_size.byte.b1;
   found.buffer[offset_unmatched_size++] = unmatched_size.byte.b0;
-  
+
   SHA1_Init(&ctx);
   SHA1_Update(&ctx, found.buffer + 4 + DIGEST_SIZE, found.offset - (4 + DIGEST_SIZE));
   SHA1_Final(found.buffer + 4, &ctx);
@@ -209,7 +209,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   TO			to;
   MATCH			match;
   FOUND			found;
-  unsigned int		count, potential, line, total, where, start, finish, limit;
+  unsigned int		count, line, total, where, start, finish, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
   pthread_t		from_thread, to_thread, sha1_thread;
@@ -326,8 +326,6 @@ void  *prepare_sha1(void *nothing)  {
                      to.index.crc[  to.block + count ].dword ) )
           count++;
 
-        potential = count;
-
         while ( count > match.count ) {
           if ( memcmp( from.index.natural[from.block] + from.buffer,
                         to.index.natural[   to.block] +   to.buffer,
@@ -340,7 +338,7 @@ void  *prepare_sha1(void *nothing)  {
           } else  count--;
         }
 
-        if ( ++where < from.index.ordereds ) {
+        if ( ++where  < from.index.ordereds ) {
           from.block  = from.index.ordered[where];
           fcrc0.dword = from.index.crc[from.block    ].dword;
           fcrc1.dword = from.index.crc[from.block + 1].dword;
@@ -355,7 +353,7 @@ void  *prepare_sha1(void *nothing)  {
         to.block                             +=  match.count;
         found.count++;
       } else  to.block++;
-    } else  to.block++;
+    } else    to.block++;
   }
 
   found.pair[found.count  ].to.dword     =  to.index.naturals;
@@ -573,9 +571,9 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
     exit(EXIT_FAILURE);
   }
 
+
    from.index.natural  =  natural_block_list (  from.buffer,  from.size,  &from.index.naturals );
   delta.index.natural  =  natural_block_list ( delta.buffer, delta.size, &delta.index.naturals );
-
   delta.offset  =  0;
    from.offset  =  0;
      to.block   =  0;
