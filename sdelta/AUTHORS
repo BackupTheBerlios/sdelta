@@ -8,6 +8,8 @@ however additional endian/architecture/POSIX
 porting code was added by Pavel Gorshkov <svinn@gmx.net>
 so that sdelta can be run on FreeBSD and Solaris platforms.
 
+input.h and input.c contributed by Pavel Gorshkov <svinn@gmx.net>
+
 Kyle Sallee also created the Sorcerer distribution of 
 GNU Linux and free software that has been providing SAs
 cutting edge technology like xdelta and sdelta source 

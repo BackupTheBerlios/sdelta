@@ -59,6 +59,7 @@ Made changes and improvements resulting in
 now compiles the source with the correct 
 library links for use on FreeBSD.
 
+
 Sat Jan  1 21:57:59 UTC 2005	20040101	Kyle Sallee
 Made changes and improvements resulting in
 25% speed increase in sdelta patch generation
@@ -67,6 +68,7 @@ Very large files will result in less swap
 thrashing during sdelta patch generation.
 Compressed size of sdelta patches may either 
 increase or decrease a little due to these changes.
+
 
 Mon Jan  3 21:00:43 UTC 2005	20040103	Kyle Sallee
 Added leap frogging to expedite the location of the first
@@ -77,7 +79,20 @@ a one line change in blocks.c that slightly improve the speed
 of which the natural block list is generated for files that 
 have lines exceeding 127 bytes.
 
+
 Tue Jan  4 23:03:29 UTC 2005	20040104	Kyle Sallee
 Made sorting faster.
 Eliminated a bug in sdelta.c where I placed a 
 break when I really wanted a continue command.
+
+
+Tue Jan 11 21:45:36 UTC 2005
+Using a new input.c to better support mmap reading of files
+and anonymous mmap on stdin on Linux, FreeBSD, and Solaris POSIX.
+mmap of files instead of reading them into swap provides better
+performance and less swapping when making sdelta patches of very
+large files like the + 500M Sorcerer Install/Rescue ISO9660.
+
+Introduced POSIX threading to sdelta generation that should
+improve speed of sdelta generation on SMP boxes with adequate 
+RAM to avoid swapping or re-reading of mmaped files.

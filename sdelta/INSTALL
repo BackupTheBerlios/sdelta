@@ -1,15 +1,15 @@
-Issue "cast mhash"
+sdelta requires the mhash library for generating sha1sum message digest.
+mhash is available from
+http://mhash.sourceforge.net
+sdelta has been tested with mhash version 0.9.1
+although newer or older versions may work fine.
 
-Or for the unfortunate sorcery deprived SAs
-Please install mhash since sdelta uses mhash
-to generate sha1 checksums.
+export to the environment desired CFLAGS and LDFLAGS.
 
-export to the environment your desired CFLAGS and LDFLAGS.
+export   CFLAGS="-Os"
 
-For Linux and Solaris:
-Then,    issue "make"
-Finally, issue "make install" to have sdelta installed to /usr/bin
+Will suffice on most platforms.
 
-For FreeBSD:
-Then,    issue "make bsd"
-Finally, issue "make install"
+For Linux and Solaris: $ make
+For FreeBSD:           $ make bsd
+For All:               $ make install

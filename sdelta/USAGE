@@ -1,57 +1,53 @@
-To generate an sdelta between two source tarballs:
+Terse explanation:
 
-sdelta     glibc-2.3.2.tar  \
-           glibc-2.3.3.tar  |
-bzip2 -9 > glibc-2.3.2-2.3.3.tar.sdelta.bz2
+To generate a patch:  $ sdelta  old  new    >  patch
+To apply    a patch:  $ sdelta  old  patch  >  new
 
-The above example creates a bzip2 compressed 
-sdelta of the glibc-2.3.2.tar and glibc-2.3.3.tar
-Type it all on one line if you prefer omitting the \
 
-Now the produced delta file can be used in conjunction
-with the first source to generate the second.
+Verbose explanation:
 
-( bzcat  glibc-2.3.2-2.3.3.tar.sdelta.bz2
-    cat  glibc-2.3.2.tar ) | 
-sdelta > glibc-2.3.3
+Here is an example where we generate a sdelta patch file
+for an upgrade of glibc from version 2.3.2 to version 2.3.3.
 
-Of course you can choose to decompress the sdelta first:
+First, generate the sdelta upgrade patch file.
 
-bunzip2  glibc-2.3.2-2.3.3.tar.sdelta.bz2
-cat      glibc-2.3.2-2.3.3.tar.sdelta \
-         glibc-2.3.2.tar |
-sdelta > glibc-2.3.3.tar
+$ sdelta  glibc-2.3.2.tar  glibc-2.3.3.tar  >  glibc-2.3.2-2.3.3.sdelta
 
-And if you use FreeBSD you will want to avoid using stdin completely:
+Now compress it with your favorite compression program:
 
-sdelta glibc-2.3.2.tar glibc-2.3.2-2.3.3.tar.sdelta > glibc-2.3.3.tar
+$ bzip2                                glibc-2.3.2-2.3.3.tar.sdelta
+$ 7za    a  glibc-2.3.2-2.3.3.tar.7za  glibc-2.3.2-2.3.3.tar
+$ gzip  -9                             glibc-2.3.2-2.3.3.tar
 
-Remember when both generating and applying sdelta patches
-that the dictionary file is the first filename parameter.
-Only when the sdelta patch and dictionary file are provided
-through stdin does the sdelta patch file come first.
+956K  glibc-2.3.2-2.3.3.tar.7za
+1.1M  glibc-2.3.2-2.3.3.tar.bz2
+1.4M  glibc-2.3.2-2.3.3.tar.gz
 
-If bash shell syntax is confusing 
-then please read the bash manual page by typing :  man  bash
+The better the compression program the smaller 
+the compressed sdelta patch file will be.
+Any of the above 3 is preferable to transfering 
+13M  glibc-2.3.3.tar.bz2  or
+17M  glibc-2.3.3.tar.bz2
 
-I prefer to pipe data when possible between programs.
 
-Using curl and bzip2 for example one can download a 
-sdelta patch file, decompress it in stream without 
-writing it to disk, pipe it into sdelta along 
-with the decompressed dictionary file and have
-the to-file written out or processed in stream by
-another program without writing anything to disk.
-No waste, no temporary file, 
-do it all in one long piped command.
+Now send the tiny sdelta patch to a box 
+that has only the old glibc source tarball.
 
-sdelta does not use temporary files. 
-It does not discard data until it is no longer needed.
-sdelta is optimized to use as much memory as required
-to perform it's task and maybe even more than is installed.
-Therefore, when working with large files, such as linux
-source tarballs, please enable adequate swap space. 
-While sdelta may allocate and hold a large portition
-of memory the memory it is actively using at any time
-is usually relatively small and therefore should not
-constantly grind the swap on all except the most limited boxes.
+Finally, apply the patch to generate a new glibc source tarball:
+
+sdelta  glibc-2.3.2.tar  glibc-2.3.2-2.3.3.tar.sdelta  >  glibc-2.3.3.tar
+
+Now you can extract the new glibc-2.3.3 source from the 
+tarball using $ tar -xf glibc-2.3.3.tar and begin compiling.
+
+Note that sdelta works on uncompressed source tarballs.
+Doing a sdelta of glibc-2.3.2.tar.bz2 and glibc-2.3.3.tar.bz2
+will probably yield a horribily large sdelta patch file if
+it works at all.
+
+sdelta does work for generating patch files 
+for binary data and not just source tarballs.
+However with non text/source data compressed
+sdelta patch files may be larger than an 
+equivalently compressed xdelta patch file.
+Think sdelta for source and xdelta for binary patch files.
