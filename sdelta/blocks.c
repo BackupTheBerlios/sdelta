@@ -109,11 +109,7 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
   DWORD		crc;
 
   static int  compare_tag (const void *v0, const void *v1)  {
-    u_int32_t	 p0,  p1;
-    int          diff;
-
-    if  ( tag[*(u_int32_t *)v0] > tag[*(u_int32_t *)v1] )  return   1;
-    else                                                   return  -1;
+    return  tag[*(u_int32_t *)v0] - tag[*(u_int32_t *)v1];
   }
 
 
@@ -132,14 +128,10 @@ TAG  *order_tag ( u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
       c1  =  cr[ p1 + 1];
     }
 
-    if  ( c0.dword == c1.dword ) {
-      if  ( p0 > p1 )  diff =  1;
-      else             diff = -1;
-    }
-    else if  ( c0.dword > c1.dword )  diff =  1;
-    else                              diff = -1;
+         if  ( c0.dword == c1.dword )  return  p0 - p1;
+    else if  ( c0.dword >  c1.dword )  return   1;
+    else                               return  -1;
 
-    return  diff;
   }
 
   tags  =                 malloc ( 0x10000 * sizeof(TAG) );
