@@ -22,6 +22,15 @@ cat      glibc-2.3.2-2.3.3.tar.sdelta \
          glibc-2.3.2.tar |
 sdelta > glibc-2.3.3.tar
 
+And if you use FreeBSD you will want to avoid using stdin completely:
+
+sdelta glibc-2.3.2.tar glibc-2.3.2-2.3.3.tar.sdelta > glibc-2.3.3.tar
+
+Remember when both generating and applying sdelta patches
+that the dictionary file is the first filename parameter.
+Only when the sdelta patch and dictionary file are provided
+through stdin does the sdelta patch file come first.
+
 If bash shell syntax is confusing 
 then please read the bash manual page by typing :  man  bash
 
@@ -35,8 +44,6 @@ the to-file written out or processed in stream by
 another program without writing anything to disk.
 No waste, no temporary file, 
 do it all in one long piped command.
-Yes pipes are cool when you know how to toke them.
-sdelta is a cancer free pipe-able program.
 
 sdelta does not use temporary files. 
 It does not discard data until it is no longer needed.

@@ -45,3 +45,26 @@ unsigned char *buffer_stream(FILE *s, size_t *c)  {
   *(unsigned char *)(buf + off) = 0x0a;
   return  ( realloc ( buf, off + 1 ) );
 }
+
+
+unsigned char *buffer_file(char *n, size_t *c)  {
+
+  FILE  *s;
+  void  *b;
+
+  s  =  fopen( n, "r" );
+
+  if   ( s  == NULL ) {
+    fprintf( stderr, "Problem opening %s\n", n);
+    exit(EXIT_FAILURE);
+  }
+         fseek( s, 0, SEEK_END );
+  *c  =  ftell( s );
+         fseek( s, 0, SEEK_SET );
+   b  =  malloc( *c + 1 );
+         fread( b, *c + 1, 1, s );
+  *(unsigned char *)(b + *c) = 0x0a;
+  fclose(s);
+  return ( unsigned char * )b;
+
+}

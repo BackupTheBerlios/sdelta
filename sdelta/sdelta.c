@@ -187,13 +187,8 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   u_int16_t		tag;
   DWORD			crc, fcrc;
 
-  stream        =   fopen(fromfilename, "r");
-  if  ( stream  ==  NULL ) {
-    perror("Problem opening from file");
-    exit(EXIT_FAILURE);
-  }
+  from.buffer = buffer_file ( fromfilename, &from.size );
 
-  from.buffer      =   buffer_stream (stream, &from.size);
   if  ( from.size  ==  0    )  {
     perror("Problem reading from file");
     exit(EXIT_FAILURE);
@@ -205,13 +200,8 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
 
   make_index( &from.index, from.buffer, from.size );
 
-  stream        =   fopen(tofilename, "r");
-  if  ( stream  ==  NULL ) {
-    perror("Problem opening to file");
-    exit(EXIT_FAILURE);
-  }
+  to.buffer = buffer_file ( tofilename, &to.size );
 
-  to.buffer      =   buffer_stream (stream, &to.size);
   if  ( to.size  ==  0    )  {
     perror("Problem reading to file");
     exit(EXIT_FAILURE);
@@ -225,7 +215,8 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   while  ( to.index.naturals                >  to.block )  {
 
     if   ( to.index.natural[to.block+1].offset -
-           to.index.natural[to.block  ].offset  >  lazy )  {
+           to.index.natural[to.block  ].offset  >  4)  {
+/*         to.index.natural[to.block  ].offset  >  lazy )  {  */
 
       crc.dword      =  to.index.natural[to.block].crc.dword;
       tag            =  crc_tag ( crc );
@@ -494,7 +485,7 @@ void	make_to(void)  {
   }
 
   if  ( memcmp( from.sha1, found.buffer + 24, 20 ) != 0 ) {
-    fprintf(stderr, "The sha1 for the from files did not match.\nAborting.\n");
+    fprintf(stderr, "The sha1 for the dictionary file did not match.\nAborting.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -549,6 +540,197 @@ void	make_to(void)  {
 }
 
 
+void  make_to_new(char *dict_filename, char *sdelta_filename)  {
+  FOUND			found;
+  FROM			from, delta;
+  TO			to;
+  static DWORD		*dwp;
+  unsigned char		control;
+  u_int32_t		stretch, line;
+  u_int32_t		block;
+  u_int32_t		size;
+  MHASH			td;
+
+/*  found.buffer  =  buffer_stream(stdin, &found.size); */
+
+  found.buffer = buffer_file( sdelta_filename, &found.size );
+
+  found.offset       =  44;  /* Skip the magic and 2 sha1 */
+  dwp                =  (DWORD *)&to.size;
+  dwp->byte.b3       =  found.buffer[found.offset++];
+  dwp->byte.b2       =  found.buffer[found.offset++];
+  dwp->byte.b1       =  found.buffer[found.offset++];
+  dwp->byte.b0       =  found.buffer[found.offset++];
+  found.pair         =  malloc ( found.size );
+  found.count        =  0;
+  line               =  0;
+
+  size          =  1;
+  while ( size !=  0 ) {
+
+    control     =  found.buffer[found.offset++];
+    dwp         =  (DWORD *)&found.pair[found.count].from;
+    dwp->dword  =  0;
+
+    switch ( control & 0xc0 ) {
+      case 0xc0 : dwp->byte.b3 = found.buffer[found.offset++];
+                  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x80:  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x40:  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      default:    dwp->byte.b0 = found.buffer[found.offset++];
+    }
+
+    dwp         =  (DWORD *)&found.pair[found.count].count;
+    dwp->dword  =  0;
+    switch ( control & 0x30 ) {
+      case 0x30 : dwp->byte.b3 = found.buffer[found.offset++];
+                  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x20:  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x10:  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      default:    dwp->byte.b0 = found.buffer[found.offset++];
+    }
+    size        =  found.pair[found.count].count;
+    dwp         =  (DWORD *)&stretch;
+    dwp->dword  =  0;
+
+    if  ( ( control & 2 )  == 2 ) {
+    switch ( control & 0x0c ) {
+      case 0x0c : dwp->byte.b3 = found.buffer[found.offset++];
+                  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x08:  dwp->byte.b2 = found.buffer[found.offset++];
+                  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      case 0x04:  dwp->byte.b1 = found.buffer[found.offset++];
+                  dwp->byte.b0 = found.buffer[found.offset++];
+                  break;
+      default:    dwp->byte.b0 = found.buffer[found.offset++];
+    }
+    line += stretch;
+    }
+
+    if ( verbosity > 1 )
+      fprintf(stderr, "block %i  control %x  stretch %i  to %i  count %i  from %i\n",
+              found.count,
+              control,
+              stretch,
+              line,
+              found.pair[found.count].count,
+              found.pair[found.count].from);
+
+            found.pair[found.count  ].to  = line;
+    line += found.pair[found.count++].count;
+
+  };
+
+  found.pair    =  realloc( found.pair, sizeof(PAIR) * found.count );
+
+  dwp           =  (DWORD *)&delta.size;
+  dwp->byte.b3  =  found.buffer[found.offset++];
+  dwp->byte.b2  =  found.buffer[found.offset++];
+  dwp->byte.b1  =  found.buffer[found.offset++];
+  dwp->byte.b0  =  found.buffer[found.offset++];
+
+  delta.buffer  =  found.buffer + found.offset;
+
+/*
+   from.buffer  =  found.buffer + found.offset + delta.size;
+   from.size    =  found.size   - found.offset - delta.size;
+   found.size   =  found.size   - from.size    - 24;
+*/
+   from.buffer  =  buffer_file( dict_filename, &from.size );
+   found.size   =  found.size   -  24;
+
+
+  td  =  mhash_init     ( MHASH_SHA1 );
+         mhash          ( td, from.buffer, from.size );
+         mhash_deinit   ( td, from.sha1 );
+
+  td  =  mhash_init     ( MHASH_SHA1 );
+         mhash          ( td, found.buffer + 24, found.size);
+         mhash_deinit   ( td, found.sha1 );
+
+  if  ( memcmp( found.sha1, found.buffer + 4, 20 ) != 0 ) {
+    fprintf(stderr, "The sha1 for this sdelta did not match.\nAborting.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if  ( memcmp( from.sha1, found.buffer + 24, 20 ) != 0 ) {
+    fprintf(stderr, "The sha1 for the dictionary file did not match.\nAborting.\n");
+    exit(EXIT_FAILURE);
+  }
+
+   from.index.natural  =  natural_block_list (  from.buffer,  from.size,  &from.index.naturals );
+  delta.index.natural  =  natural_block_list ( delta.buffer, delta.size, &delta.index.naturals );
+
+  delta.offset  =  0;
+   from.offset  =  0;
+     to.offset  =  0;
+   from.offset  =  0;
+     to.block   =  0;
+  delta.block   =  0;
+  to.buffer     =  malloc ( to.size );
+
+  for ( block = 0; block < found.count; block++ ) {
+    stretch = found.pair[block].to - to.block;
+    if ( stretch > 0 ) {
+      size  = delta.index.natural[delta.block + stretch].offset -
+              delta.index.natural[delta.block          ].offset;
+      if ( verbosity > 1 ) {
+        fprintf(stderr, "Writing block %i  stretch %i  size %i\n",
+                                 block,    stretch,    size);
+        fprintf(stderr, "to.block %i  to.offset %i  delta.offset %i\n",
+                         to.block,    to.offset,    delta.offset);
+      }
+      memcpy( to.buffer + to.offset, delta.buffer + delta.offset, size );
+         to.offset += size;
+      delta.offset += size;
+      delta.block  += stretch;
+         to.block  += stretch;
+    }
+
+    size = from.index.natural[found.pair[block].from + 
+                              found.pair[block].count ].offset -
+           from.index.natural[found.pair[block].from  ].offset;
+    from.offset = from.index.natural[ found.pair[block].from ].offset;
+    if ( verbosity > 1 ) {
+      fprintf(stderr, "Writing block %i  blocks %i  size %i  from %i\n",
+                               block,    found.pair[block].count, size, found.pair[block].from);
+      fprintf(stderr, "to block %i  to.offset %i  from.offset %i\n\n",
+                       to.block,    to.offset,    from.offset);
+    }
+    memcpy( to.buffer + to.offset, from.buffer + from.offset, size );
+    to.offset += size;
+    to.block  += found.pair[block].count;
+  }
+
+  fwrite( to.buffer, 1, to.offset, stdout );
+
+  free(   to.buffer);
+  free(found.buffer);
+  free( from.buffer);
+}
+
+
 void  help(void)  {
   printf("\nsdelta designed programmed and copyrighted by\n");
   printf("Kyle Sallee in 2004, All Rights Reserved.\n");
@@ -566,8 +748,29 @@ void  help(void)  {
 
   printf("Below is an example for making linux-2.6.8.1.tar\n\n");
   printf("$ ( bzcat linux-2.6.7-linux-2.6.8.1.tar.sdelta.bz2;\n");
-  printf(">     cat linux-2.6.7.tar ) | ./sdelta > linux-2.6.8.1.tar\n");
+  printf(">     cat linux-2.6.7.tar ) | ./sdelta > linux-2.6.8.1.tar\n\n");
+  printf("On FreeBSD it could be signifigantly faster to issue:\n");
+  printf("./sdelta linux-2.6.7 linux-2.6.7-linux-2.6.8.1.tar.sdelta > linux-2.6.8.1.tar\n");
   exit(EXIT_FAILURE);
+}
+
+
+int  check_magic( char *n )  {
+
+  FILE *s;
+  char b[5];
+
+  s = fopen( n, "r" );
+
+  if   ( s  == NULL ) {
+    fprintf( stderr, "Problem opening %s\n", n);
+    exit(EXIT_FAILURE);
+  }
+
+  fread( b, 4, 1, s);
+  close(s);
+  return  memcmp( b, &magic, 4 );
+
 }
 
 
@@ -581,7 +784,11 @@ int	main	(int argc, char **argv)  {
     if ( ( lazy < 4 ) || ( lazy > 40 ) )  lazy=4;
   }
 
-  if		(argc == 3)  make_sdelta( argv[1], argv[2] );
+  if  (argc == 3)  {
+    if  ( check_magic( argv[2] ) == 0 )  make_to_new( argv[1], argv[2] );
+    else                                 make_sdelta( argv[1], argv[2] );
+  }
+
   else  if	(argc == 1)  make_to();
   else                       help();
   exit(EXIT_SUCCESS);

@@ -27,6 +27,7 @@ benfits of using generic dictionary patching.
 technology and it's current savings over bzip2 for compressing a 
 large and mostly compressible Sorcerer Install/Rescue ISO9660 image.
 
+
 Wed Dec  8 00:03:12 UTC 2004	20041208	Kyle Sallee
 Pavel Gorshkov <svinn@gmx.net> provided a patch for
 adler32.h that corrects endian detection on Solaris.
@@ -38,3 +39,14 @@ want to install libdlmalloc from /usr/ports/devel/libdlmalloc
 and then gcc -O2 -pipe *.c -ldlmalloc -lmhash -o sdelta
 or export LD_PRELOAD=/usr/lib/libdlmalloc.so prior to
 running sdelta.
+
+
+Fri Dec 17 21:50:18 UTC 2004	20041217	Kyle Sallee
+Implemented changes for accepting input of sdelta patch
+and dictionary file on command line for faster application
+of sdelta patches on FreeBSD.  However the changes provide
+negligible speed improvement on linux.
+
+Thanks goes to Pavel Gorshkov <svinn@gmx.net> for finding
+that successive calls to realloc on FreeBSD even with an
+alternate malloc is far slower than a malloc.
