@@ -4,7 +4,6 @@
 typedef struct TO {
   size_t	 size;
   unsigned char	*buffer;	/* ptr to the file in memory	*/
-  unsigned char	 sha1[20];	/* sha1 of the buffer		*/
   INDEX		 index;		/* Index without sorted data	*/
   size_t	 offset;	/* working offset into buffer	*/
   size_t	 block;		/* the curently examined block  */
@@ -37,12 +36,13 @@ typedef struct PAIR {
 
 
 typedef	struct	FOUND	{
-  u_int32_t	 count;
-  PAIR		*pair;
-  unsigned char	*buffer;
-  u_int32_t	 offset;
-  u_int32_t	 size;
-  unsigned char	 sha1[20];
+  u_int32_t		count;
+  PAIR			*pair;
+  unsigned char		*buffer;
+  u_int32_t		offset;
+  u_int32_t		size;
+  MHASH			td;
+  unsigned char	 	sha1[20];
 }  FOUND;
 
 
