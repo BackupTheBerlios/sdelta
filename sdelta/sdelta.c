@@ -113,7 +113,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
               found.pair[block].to,
               found.pair[block].count,
               found.pair[block].from,
-              to.index.natural[found.pair[block].to].offset);
+              to.index.natural[found.pair[block].to]);
 
     dwp = (DWORD *)&origin;
     if ( origin      >=  0x1000000 ) found.buffer[found.offset++] = dwp->byte.b3;
@@ -142,7 +142,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
      to.offset            =  0;
 
   for ( block = 0; block < found.count ; block++ ) {
-    stretch          =  to.index.natural[found.pair[block].to].offset  -  
+    stretch          =  to.index.natural[found.pair[block].to]  -  
                         to.offset;
 
     if  ( stretch > 0 ) {
@@ -158,7 +158,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
       found.offset    += stretch;
     }
     to.offset     = to.index.natural[found.pair[block].to +
-                                     found.pair[block].count ].offset;
+                                     found.pair[block].count ];
   }
 
   dwp = (DWORD *)&unmatched_size;
@@ -200,6 +200,7 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
 
   make_index( &from.index, from.buffer, from.size );
 
+
   to.buffer = buffer_file ( tofilename, &to.size );
 
   if  ( to.size  ==  0    )  {
@@ -208,33 +209,29 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   }
 
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
+  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals );
   found.count       =  0;
   to.block          =  0;
 
   while  ( to.index.naturals                >  to.block )  {
 
-    if   ( to.index.natural[to.block+1].offset -
-           to.index.natural[to.block  ].offset  >  4)  {
-/*         to.index.natural[to.block  ].offset  >  lazy )  {  */
+    if   ( to.index.natural[to.block+1] -
+           to.index.natural[to.block  ]  >  4)  {
+/*         to.index.natural[to.block  ]  >  lazy )  {  */
 
-      crc.dword      =  to.index.natural[to.block].crc.dword;
+      crc.dword      =  to.index.crc[to.block].dword;
       tag            =  crc_tag ( crc );
       where          =  from.index.tags[tag];
       match.count    =  0;
          to.limit    =  to.index.naturals - to.block;
 
-/*
-      while ( ( where  <  from.index.ordereds ) &&
-              ( tag    == crc_tag(from.index.natural[from.index.ordered[where]].crc) ) ) {
-*/
       while ( ( where       <  from.index.ordereds                      ) &&
               ( from.block  =  from.index.ordered[where]                ) &&
-              ( fcrc.dword  =  from.index.natural[from.block].crc.dword ) &&
+              ( fcrc.dword  =  from.index.crc[from.block].dword         ) &&
               ( tag         == crc_tag(fcrc)                            ) &&
               ( crc.dword   >= fcrc.dword                               )
             ) {
-
 
         if ( crc.dword == fcrc.dword ) {
 
@@ -246,15 +243,15 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
             limit  =        to.limit;
 
           while  ( ( count < limit )  &&
-                   ( from.index.natural[from.block + count ].crc.dword ==
-                       to.index.natural[  to.block + count ].crc.dword ) )
+                   ( from.index.crc[from.block + count ].dword ==
+                       to.index.crc[  to.block + count ].dword ) )
             count++;
 
           while ( count > match.count ) {
-            if ( memcmp( from.index.natural[from.block].offset + from.buffer,
-                          to.index.natural[   to.block].offset +   to.buffer,
-                          to.index.natural[   to.block + count].offset -
-                          to.index.natural[   to.block        ].offset
+            if ( memcmp( from.index.natural[from.block] + from.buffer,
+                          to.index.natural[   to.block] +   to.buffer,
+                          to.index.natural[   to.block + count] -
+                          to.index.natural[   to.block        ]
                          ) == 0 ) {
               match.line   =  from.block;
               match.count  =  count;
@@ -266,8 +263,8 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
       }  /* finished finding matches for to.block */
 
       if ( ( match.count > 0 ) &&
-           ( from.index.natural[match.line + match.count + 1].offset -
-             from.index.natural[match.line                  ].offset > 50 ) )  {
+           ( from.index.natural[match.line + match.count + 1] -
+             from.index.natural[match.line                  ] > 50 ) )  {
         found.pair[found.count].to      =     to.block;
         found.pair[found.count].from    =  match.line;
         found.pair[found.count].count   =  match.count;
@@ -287,6 +284,7 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
 
     fprintf(stderr, "Blocks in from                      %i\n", from.index.naturals);
     fprintf(stderr, "Blocks in to                        %i\n",   to.index.naturals);
+    fprintf(stderr, "Sorted blocks in from               %i\n", from.index.ordereds);
 
     total=0;
     for ( where = 0; where < found.count; where++)
@@ -313,8 +311,8 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
     for ( where = 0; where < found.count; where++) {
       line = found.pair[where].to; 
       for ( count = 0 ; count < found.pair[where].count ; count++) {
-       total += to.index.natural[line + 1].offset -
-                to.index.natural[line    ].offset;
+       total += to.index.natural[line + 1] -
+                to.index.natural[line    ];
        line++;
       }
     }
@@ -322,32 +320,19 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
     fprintf(stderr, "Bytes in to                         %i\n", to.size);
     fprintf(stderr, "Bytes matched                       %i\n", total);
     fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
-
-    total=0;
-    for ( where = 0; where < found.count - 2; where++) {
-      line = found.pair[where].count;
-      line = to.index.natural[found.pair[where + 1].to].offset -
-             to.index.natural[found.pair[where    ].to + line].offset;
-
-      if  (total < line)  total  =  line;
-
-      if    ( verbosity > 2 )
-        if  ( 0         < line )
-          fprintf(stderr, "Unmatched gap of size %i at offset %i\n",
-                  line, to.index.natural[found.pair[where].to + line].offset);
-    }
-    fprintf(stderr, "Largest unmatched sequence of bytes %i\n", total);
   }
 
   free ( from.index.natural );
+  free ( from.index.crc     );
   free ( from.index.ordered );
   free ( from.buffer        );
 
   output_sdelta(found, to, from);
 
-  free (   to.buffer        );
-  free (   to.index.natural );
-  free ( found.pair         );
+  free (    to.buffer        );
+  free (    to.index.natural );
+  free (    to.index.crc     );
+  free ( found.pair          );
 
 }
 
@@ -507,8 +492,8 @@ void	make_to(void)  {
   for ( block = 0; block < found.count; block++ ) {
     stretch = found.pair[block].to - to.block;
     if ( stretch > 0 ) {
-      size  = delta.index.natural[delta.block + stretch].offset -
-              delta.index.natural[delta.block          ].offset;
+      size  = delta.index.natural[delta.block + stretch] -
+              delta.index.natural[delta.block          ];
       if ( verbosity > 1 ) {
         fprintf(stderr, "Writing block %i  stretch %i  size %i\n",
                                  block,    stretch,    size);
@@ -523,9 +508,9 @@ void	make_to(void)  {
     }
 
     size = from.index.natural[found.pair[block].from + 
-                              found.pair[block].count ].offset -
-           from.index.natural[found.pair[block].from  ].offset;
-    from.offset = from.index.natural[ found.pair[block].from ].offset;
+                              found.pair[block].count ] -
+           from.index.natural[found.pair[block].from  ];
+    from.offset = from.index.natural[ found.pair[block].from ];
     if ( verbosity > 1 ) {
       fprintf(stderr, "Writing block %i  blocks %i  size %i  from %i\n",
                                block,    found.pair[block].count, size, found.pair[block].from);
@@ -701,8 +686,8 @@ void  make_to_new(char *dict_filename, char *sdelta_filename)  {
   for ( block = 0; block < found.count; block++ ) {
     stretch = found.pair[block].to - to.block;
     if ( stretch > 0 ) {
-      size  = delta.index.natural[delta.block + stretch].offset -
-              delta.index.natural[delta.block          ].offset;
+      size  = delta.index.natural[delta.block + stretch] -
+              delta.index.natural[delta.block          ];
       if ( verbosity > 1 ) {
         fprintf(stderr, "Writing block %i  stretch %i  size %i\n",
                                  block,    stretch,    size);
@@ -717,9 +702,9 @@ void  make_to_new(char *dict_filename, char *sdelta_filename)  {
     }
 
     size = from.index.natural[found.pair[block].from + 
-                              found.pair[block].count ].offset -
-           from.index.natural[found.pair[block].from  ].offset;
-    from.offset = from.index.natural[ found.pair[block].from ].offset;
+                              found.pair[block].count ] -
+           from.index.natural[found.pair[block].from  ];
+    from.offset = from.index.natural[ found.pair[block].from ];
     if ( verbosity > 1 ) {
       fprintf(stderr, "Writing block %i  blocks %i  size %i  from %i\n",
                                block,    found.pair[block].count, size, found.pair[block].from);
