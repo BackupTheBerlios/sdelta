@@ -443,6 +443,7 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   dwp->byte.b2       =  found.buffer[found.offset++];
   dwp->byte.b1       =  found.buffer[found.offset++];
   dwp->byte.b0       =  found.buffer[found.offset++];
+  /* in rare cases found.size may not be enough */
   found.pair         =  malloc ( found.size );
   found.count        =  0;
   line               =  0;
@@ -563,25 +564,16 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
 
   delta.offset  =  0;
    from.offset  =  0;
-     to.offset  =  0;
    from.offset  =  0;
      to.block   =  0;
   delta.block   =  0;
-  to.buffer     =  malloc ( to.size );
 
   for ( block = 0; block < found.count; block++ ) {
     stretch = found.pair[block].to - to.block;
     if ( stretch > 0 ) {
       size  = delta.index.natural[delta.block + stretch] -
               delta.index.natural[delta.block          ];
-      if ( verbosity > 1 ) {
-        fprintf(stderr, "Writing block %i  stretch %i  size %i\n",
-                                 block,    stretch,    size);
-        fprintf(stderr, "to.block %i  to.offset %i  delta.offset %i\n",
-                         to.block,    to.offset,    delta.offset);
-      }
-      memcpy( to.buffer + to.offset, delta.buffer + delta.offset, size );
-         to.offset += size;
+      write( 1, delta.buffer + delta.offset, size );
       delta.offset += size;
       delta.block  += stretch;
          to.block  += stretch;
@@ -591,24 +583,14 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
                               found.pair[block].count ] -
            from.index.natural[found.pair[block].from  ];
     from.offset = from.index.natural[ found.pair[block].from ];
-    if ( verbosity > 1 ) {
-      fprintf(stderr, "Writing block %i  blocks %i  size %i  from %i\n",
-                               block,    found.pair[block].count, size, found.pair[block].from);
-      fprintf(stderr, "to block %i  to.offset %i  from.offset %i\n\n",
-                       to.block,    to.offset,    from.offset);
-    }
-    memcpy( to.buffer + to.offset, from.buffer + from.offset, size );
-    to.offset += size;
+    write( 1, from.buffer + from.offset, size );
     to.block  += found.pair[block].count;
   }
-
-  fwrite( to.buffer, 1, to.offset, stdout );
 
   if (from_ibuf)
       unload_buf(from_ibuf);
   unload_buf(found_ibuf);
 }
-
 
 
 void  help(void)  {
@@ -635,28 +617,6 @@ void  help(void)  {
 }
 
 
-/* void  parse_parameters( char *f1, char *f2)  {
-  size_t   s1,  s2;
-  char    *b1, *b2;
-
-  b1=mmap_file( f1, &s1 );
-  b2=mmap_file( f2, &s2 );
-
-  if ( memcmp( b2, &magic, 4 ) == 0 )
-        make_to     ( b1, s1, b2, s2 );
-  else  make_sdelta ( b1, s1, b2, s2 );
-  return;
-}
-
-void  parse_stdin(void) {
-  size_t	 s;
-  char		*b;
-
-  b=mmap_stdin(&s);
-  make_to ( NULL, 0, b, s );
-  return;
-} */
-
 void  parse_parameters( char *f1, char *f2)  {
   static INPUT_BUF b1, b2;
 
@@ -668,12 +628,14 @@ void  parse_parameters( char *f1, char *f2)  {
   else  make_sdelta (&b1, &b2);
 }
 
+
 void  parse_stdin(void) {
   static INPUT_BUF b;
 
   load_buf(NULL, &b);
   make_to (NULL, &b);
 } 
+
 
 int	main	(int argc, char **argv)  {
 
