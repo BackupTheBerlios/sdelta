@@ -1,4 +1,4 @@
-/* $Id: input.c,v 1.6 2005/01/13 17:04:45 svinn Exp $ */
+/* $Id: input.c,v 1.7 2005/01/25 17:22:47 svinn Exp $ */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -7,14 +7,16 @@
 #include "input.h"
 
 
+#define FNAME (fname ? fname : "stdin")
+
 void load_buf(const char *fname, INPUT_BUF *b) {
     struct stat st;
     size_t alloc_size = 0, cnt;
-#if defined(USE_MADVISE) && defined(USE_MAP_ANON_STDIN)
+#if defined(USE_MADVISE) && defined(USE_MAP_ANON)
     size_t offset;	/* to cut off the excess */
 #endif
 
-#if defined(USE_MMAP) || defined(USE_MAP_ANON_STDIN)
+#if defined(USE_MMAP) || defined(USE_MAP_ANON)
     b->mmap_size =
 #endif
     b->size = 0;
@@ -42,7 +44,6 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 		exit(EXIT_FAILURE);
 	    }
 #ifdef USE_MMAP
-	    /* let's try to mmap it directly */
 	    if ((b->buf = mmap(NULL, alloc_size, PROT_READ, MAP_PRIVATE, b->fd, 0)) == MAP_FAILED)
 		/* mmap failed: try to use malloc */
 		fprintf(stderr, "warning: %s: mmap(size = %u, fd = %d) failed\n", fname, alloc_size, b->fd);
@@ -54,36 +55,27 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	    }
 #endif
 	}
-	/* if it is a device, or USE_MMAP is not defined, or mmap failed,
-	   use malloc then */
+	/* if it is a device, or USE_MMAP is not defined,
+	   or mmap failed, use MAP_ANON or malloc then */
     }
-    else {
-	/* fname is NULL, so it must be stdin */
+    else
 	b->fd = 0;
-#ifdef USE_MAP_ANON_STDIN
-	/* try to prepare MAP_ANON, if available */
-	if ((b->buf = mmap(NULL, alloc_size = MAX_MAP_ANON, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0)) == MAP_FAILED)
-	    /* mmap failed, let's try to use malloc */
-	    fprintf(stderr, "warning: stdin: mmap(size = %u, MAP_ANON) failed\n", MAX_MAP_ANON);
-	else
-	    b->mmap_size = alloc_size;
-#endif
-    }
 
-    /* from this point, no mmaps can happen, and the only mmaped
-       memory we can encounter is MAP_ANON (that is, stdin) */
 
-    /* use malloc */
-#ifdef USE_MAP_ANON_STDIN
-    if (! b->mmap_size) {
+#ifdef USE_MAP_ANON
+    /* try to prepare MAP_ANON, if available */
+    if ((b->buf = mmap(NULL, alloc_size ? alloc_size + 1 : MAX_MAP_ANON, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NORESERVE, -1, 0)) != MAP_FAILED)
+	b->mmap_size = alloc_size = alloc_size ? alloc_size + 1 : MAX_MAP_ANON;
+    else {
+	/* mmap failed, let's try to use malloc */
+	fprintf(stderr, "warning: %s: mmap(size = %u, MAP_ANON) failed\n", FNAME, alloc_size ? alloc_size + 1 : MAX_MAP_ANON);
 #endif
-	/* if we know the exact size, add 1 byte */
 	alloc_size = alloc_size ? alloc_size + 1 : IBUF_ALLOC_QUANT;
 	if (!(b->buf = malloc(alloc_size))) {
-	    fprintf(stderr, "%s: malloc(%u) failed\n", fname ? fname : "stdin", alloc_size);
+	    fprintf(stderr, "%s: malloc(%u) failed\n", FNAME, alloc_size);
 	    exit(EXIT_FAILURE);
 	}
-#ifdef USE_MAP_ANON_STDIN
+#ifdef USE_MAP_ANON
     }
 #endif
 
@@ -96,10 +88,10 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	b->size += cnt;
 
 	/* input buffer is full: fatal error, if it is a MAP_ANON */
-	if (alloc_size == b->size) {
-#ifdef USE_MAP_ANON_STDIN
+	if (alloc_size == b->size)
+#ifdef USE_MAP_ANON
 	    if (b->mmap_size) {
-		fprintf(stderr, "stdin: exceeded MAP_ANON size (%u)\n", alloc_size);
+		fprintf(stderr, "%s: exceeded MAP_ANON size (%u)\n", FNAME, alloc_size);
 		exit(EXIT_FAILURE);
 	    }
 	    else
@@ -109,10 +101,9 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 		fprintf(stderr, "load_buf: realloc(buf, %u) failed\n", alloc_size);
 		exit(EXIT_FAILURE);
 	    }
-	}
     }
 
-#ifdef USE_MAP_ANON_STDIN
+#ifdef USE_MAP_ANON
     /* not mmaped, ergo, malloc'ed */
     if (! b->mmap_size) {
 #endif
@@ -121,7 +112,7 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 	    fprintf(stderr, "realloc(buf, %u) failed\n", b->size);
 	    exit(EXIT_FAILURE);
 	}
-#ifdef USE_MAP_ANON_STDIN
+#ifdef USE_MAP_ANON
     }
 #if defined(USE_MADVISE) || defined(USE_MREMAP)
     else {
@@ -140,7 +131,7 @@ void load_buf(const char *fname, INPUT_BUF *b) {
 #endif	/* USE_MREMAP */
     }
 #endif	/* USE_MADVISE || USE_MREMAP */
-#endif	/* USE_MAP_ANON_STDIN */
+#endif	/* USE_MAP_ANON */
 
     close(b->fd);
     b->fd = -1; /* unload_buf will know that it is closed */
@@ -151,10 +142,10 @@ void unload_buf(INPUT_BUF *b) {
     if (! b->buf)
 	return;
 
-#if defined(USE_MMAP) || defined(USE_MAP_ANON_STDIN)
+#if defined(USE_MMAP) || defined(USE_MAP_ANON)
     if (b->mmap_size) {
 	if (munmap(b->buf, b->mmap_size) == -1)
-	    fprintf(stderr, "warning: munmap(0x%p, 0x%08X) failed\n", b->buf, b->mmap_size);
+	    fprintf(stderr, "warning: munmap(0x%p, 0x%x) failed\n", b->buf, b->mmap_size);
 	b->buf = NULL;
 	/* close if it is not closed */
 	if (b->fd != -1) {

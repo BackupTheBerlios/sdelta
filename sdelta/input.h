@@ -1,4 +1,4 @@
-/* $Id: input.h,v 1.3 2005/01/11 17:49:31 svinn Exp $ */
+/* $Id: input.h,v 1.4 2005/01/25 17:22:47 svinn Exp $ */
 
 #ifndef __INPUT_H__
 #define __INPUT_H__
@@ -31,32 +31,32 @@
 /* mmap is enabled by default */
 #define USE_MMAP
 
-/* if USE_MAP_ANON_STDIN is undefined, mremap is not used */
+/* if USE_MAP_ANON is undefined, mremap is not used */
 #ifdef __linux__
 #define USE_MREMAP
 #endif
 
 #if defined(MAP_ANON) && defined(MAP_NORESERVE)
-#define USE_MAP_ANON_STDIN
+#define USE_MAP_ANON
 #define MAX_MAP_ANON		0x40000000
 #endif
 
 /* to disable mmap, MAP_ANON and madvise, uncomment the following: */
 /* #undef USE_MMAP
-#undef USE_MAP_ANON_STDIN */
+#undef USE_MAP_ANON */
 
 /* to disable *madvise only*, change the following line to `#if 0<newline>' */
-#if defined(MADV_SEQUENTIAL) && defined(MADV_FREE) && (defined(USE_MMAP) || defined(USE_MAP_ANON_STDIN))
+#if defined(MADV_SEQUENTIAL) && defined(MADV_FREE) && (defined(USE_MMAP) || defined(USE_MAP_ANON))
 #define USE_MADVISE
 /* MADVISE_IBUF macro needs this INPUT_BUF pointer to know
    whether the buffer was mmaped */
 #define MADVISE_IBUF(ibuf, addr, len, behav) do { \
     if (ibuf->mmap_size && madvise(addr, len, behav) == -1) \
-	fprintf(stderr, "warning: madvise(0x%p, 0x%08X, %d) failed\n", addr, len, behav); \
+	fprintf(stderr, "warning: madvise(0x%p, 0x%x, %d) failed\n", addr, len, behav); \
 } while(0)
 #define MADVISE(addr, len, behav) do { \
     if (madvise(addr, len, behav) == -1) \
-	fprintf(stderr, "warning: madvise(0x%p, 0x%08X, %d) failed\n", addr, len, behav); \
+	fprintf(stderr, "warning: madvise(0x%p, 0x%x, %d) failed\n", addr, len, behav); \
 } while(0)
 #else
 /* do not use madvise */
@@ -68,7 +68,7 @@ typedef struct {
     int fd;
     unsigned char *buf;
     size_t size;
-#if defined(USE_MMAP) || defined(USE_MAP_ANON_STDIN)
+#if defined(USE_MMAP) || defined(USE_MAP_ANON)
     size_t mmap_size;
 #endif
 } INPUT_BUF;
