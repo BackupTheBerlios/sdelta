@@ -28,7 +28,7 @@ sdelta is a line blocking dictionary compressor.
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "buffer.h"
+#include "mmap.h"
 #include "sdelta.h"
 
 #ifdef USE_MADVISE
@@ -230,8 +230,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 #define leap_0x10000() leap(0x10000)  leap_0x8000
 
 
-void  make_sdelta(char *fromfilename, char *tofilename)  {
-  /* FILE  		*stream; */
+void  make_sdelta(char *b1, size_t s1, char *b2, size_t s2)  {
   MHASH			td;
   FROM			from;
   TO			to;
@@ -240,66 +239,18 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   unsigned int		count, line, size, total, where, start, limit;
   u_int16_t		tag;
   DWORD			crc0, crc1, fcrc0, fcrc1;
-#ifdef USE_MMAP
-  struct stat		st;
-  size_t		from_mmap_size, to_mmap_size;
-  int			from_fd, to_fd;
-  
-  if (stat(fromfilename, &st) == -1) {
-      perror(fromfilename);
-      exit(EXIT_FAILURE);
-  }
 
-  if ((from_fd = open(fromfilename, O_RDONLY)) == -1) {
-      perror(fromfilename);
-      exit(EXIT_FAILURE);
-  }
-
-  if ((from.buffer = mmap(NULL, from_mmap_size = st.st_size, PROT_READ, MAP_PRIVATE, from_fd, 0)) == MAP_FAILED) {
-      perror(fromfilename);
-      exit(EXIT_FAILURE);
-  }
-  
-  from.size = st.st_size;
-  MADVISE(from.buffer, from.size);
-#else
-  from.buffer = buffer_file ( fromfilename, &from.size );
-#endif
-
-  if  ( from.size  ==  0    )  {
-    perror("Problem reading from file");
-    exit(EXIT_FAILURE);
-  }
+  from.buffer = b1;
+  to.buffer   = b2;
+  from.size   = s1;
+  to.size     = s2;
 
   td  =  mhash_init	( MHASH_SHA1 );
          mhash		( td, from.buffer, from.size );
          mhash_deinit	( td, from.sha1 );
 
-  make_index( &from.index, from.buffer, from.size );
-
-#ifdef USE_MMAP
-  if (stat(tofilename, &st) == -1) {
-      perror(tofilename);
-      exit(EXIT_FAILURE);
-  }
-  if ((to_fd = open(tofilename, O_RDONLY)) == -1) {
-      perror(tofilename);
-      exit(EXIT_FAILURE);
-  }
-  if ((to.buffer = mmap(NULL, to_mmap_size = st.st_size, PROT_READ, MAP_PRIVATE, to_fd, 0)) == MAP_FAILED) {
-      perror(tofilename);
-      exit(EXIT_FAILURE);
-  }
-  to.size = st.st_size;
-  MADVISE(to.buffer, to.size);
-#else
-  to.buffer = buffer_file ( tofilename, &to.size );
-#endif
-  
-  if  ( to.size  ==  0    )  {
-    perror("Problem reading to file");
-    exit(EXIT_FAILURE);
-  }
+  make_index ( &from.index, from.buffer, from.size );
+  madvise    (              from.buffer, from.size, MADV_RANDOM );
 
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
@@ -410,7 +361,7 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
   found.pair                       =  realloc ( found.pair, sizeof(PAIR) * found.count );
 
   if ( verbosity > 0 ) {
-    fprintf(stderr, "Statistics for sdelta from, %s, to, %s.\n", fromfilename, tofilename);
+    fprintf(stderr, "Statistics for sdelta generation.\n");
 
     fprintf(stderr, "Blocks in from                      %i\n", from.index.naturals);
     fprintf(stderr, "Blocks in to                        %i\n",   to.index.naturals);
@@ -452,40 +403,23 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
     fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
   }
 
-  free ( from.index.natural );
-  free ( from.index.crc     );
-  free ( from.index.ordered );
-
-#ifdef USE_MMAP
-  if (munmap(from.buffer, from_mmap_size) == -1) {
-      fprintf(stderr, "munmap(from.buffer, %u) failed\n", from_mmap_size);
-      /* exit(EXIT_FAILURE); */
-  }
-  close(from_fd);
-#else
-  free ( from.buffer        );
-#endif
+  free   (  from.index.natural     );
+  free   (  from.index.crc         );
+  free   (  from.index.ordered     );
+  munmap (  from.buffer, from.size );
 
   output_sdelta(found, to, from);
 
-#ifdef USE_MMAP
-  if (munmap(to.buffer, to_mmap_size) == -1) {
-      fprintf(stderr, "munmap(to.buffer, %u) failed\n", to_mmap_size);
-      /* exit(EXIT_FAILURE); */
-  }
-  close(to_fd);
-#else
-  free (    to.buffer        );
-#endif
-  
-  free (    to.index.natural );
-  free (    to.index.crc     );
-  free ( found.pair          );
+  munmap (    to.buffer,   to.size );
+  free   (    to.index.natural     );
+  free   (    to.index.crc         );
+  free   ( found.pair              );
 
 }
 
 
-void	make_to(void)  {
+
+void   make_to(char *b1, size_t s1, char *b2, size_t s2)  {
   FOUND			found;
   FROM			from, delta;
   TO			to;
@@ -496,11 +430,10 @@ void	make_to(void)  {
   u_int32_t		size;
   MHASH			td;
 
-#ifdef USE_MAP_ANON_FOR_STDIN_INPUT
-  found.buffer  =  read_file_mmap_anon(0, 0, &found.size);
-#else
-  found.buffer  =  buffer_stream(stdin, &found.size);
-#endif
+   from.buffer  =  b1;
+   from.size    =  s1;
+  found.buffer  =  b2;
+  found.size    =  s2;
 
   if  ( memcmp(found.buffer, &magic, 4) != 0 ) {
     fprintf(stderr, "Input on stdin did not start with sdelta magic.\n");
@@ -604,241 +537,11 @@ void	make_to(void)  {
   dwp->byte.b0  =  found.buffer[found.offset++];
 
   delta.buffer  =  found.buffer + found.offset;
-   from.buffer  =  found.buffer + found.offset + delta.size;
-   from.size    =  found.size   - found.offset - delta.size;
-   found.size   =  found.size   - from.size    - 24;
-
-  td  =  mhash_init     ( MHASH_SHA1 );
-         mhash          ( td, from.buffer, from.size );
-         mhash_deinit   ( td, from.sha1 );
-
-  td  =  mhash_init     ( MHASH_SHA1 );
-         mhash          ( td, found.buffer + 24, found.size);
-         mhash_deinit   ( td, found.sha1 );
-
-  if  ( memcmp( found.sha1, found.buffer + 4, 20 ) != 0 ) {
-    fprintf(stderr, "The sha1 for this sdelta did not match.\nAborting.\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if  ( memcmp( from.sha1, found.buffer + 24, 20 ) != 0 ) {
-    fprintf(stderr, "The sha1 for the dictionary file did not match.\nAborting.\n");
-    exit(EXIT_FAILURE);
-  }
-
-   from.index.natural  =  natural_block_list (  from.buffer,  from.size,  &from.index.naturals );
-  delta.index.natural  =  natural_block_list ( delta.buffer, delta.size, &delta.index.naturals );
-
-  delta.offset  =  0;
-   from.offset  =  0;
-     to.offset  =  0;
-   from.offset  =  0;
-     to.block   =  0;
-  delta.block   =  0;
-  to.buffer     =  malloc ( to.size );
-
-  for ( block = 0; block < found.count; block++ ) {
-    stretch = found.pair[block].to - to.block;
-    if ( stretch > 0 ) {
-      size  = delta.index.natural[delta.block + stretch] -
-              delta.index.natural[delta.block          ];
-      if ( verbosity > 1 ) {
-        fprintf(stderr, "Writing block %i  stretch %i  size %i\n",
-                                 block,    stretch,    size);
-        fprintf(stderr, "to.block %i  to.offset %i  delta.offset %i\n",
-                         to.block,    to.offset,    delta.offset);
-      }
-      memcpy( to.buffer + to.offset, delta.buffer + delta.offset, size );
-         to.offset += size;
-      delta.offset += size;
-      delta.block  += stretch;
-         to.block  += stretch;
-    }
-
-    size = from.index.natural[found.pair[block].from + 
-                              found.pair[block].count ] -
-           from.index.natural[found.pair[block].from  ];
-    from.offset = from.index.natural[ found.pair[block].from ];
-    if ( verbosity > 1 ) {
-      fprintf(stderr, "Writing block %i  blocks %i  size %i  from %i\n",
-                               block,    found.pair[block].count, size, found.pair[block].from);
-      fprintf(stderr, "to block %i  to.offset %i  from.offset %i\n\n",
-                       to.block,    to.offset,    from.offset);
-    }
-    memcpy( to.buffer + to.offset, from.buffer + from.offset, size );
-    to.offset += size;
-    to.block  += found.pair[block].count;
-  }
-
-  fwrite( to.buffer, 1, to.offset, stdout );
-
-  free(   to.buffer);
-#ifdef USE_MAP_ANON_FOR_STDIN_INPUT
-  munmap(found.buffer, MAX_MAP_ANON);
-#else
-  free(found.buffer);
-#endif
-}
-
-
-void  make_to_new(char *dict_filename, char *sdelta_filename)  {
-  FOUND			found;
-  FROM			from, delta;
-  TO			to;
-  static DWORD		*dwp;
-  unsigned char		control;
-  u_int32_t		stretch, line;
-  u_int32_t		block;
-  u_int32_t		size;
-  MHASH			td;
-#ifdef USE_MMAP
-  struct stat          st;
-  size_t               sdelta_mmap_size, from_mmap_size;
-  int                  sdelta_fd, from_fd;
-
-  if (stat(sdelta_filename, &st) == -1) {
-      perror(sdelta_filename);
-      exit(EXIT_FAILURE);
-  }
-  if ((sdelta_fd = open(sdelta_filename, O_RDONLY)) == -1) {
-      perror(sdelta_filename);
-      exit(EXIT_FAILURE);
-  }
-  if ((found.buffer = mmap(NULL, sdelta_mmap_size = st.st_size, PROT_READ, MAP_PRIVATE, sdelta_fd, 0)) == MAP_FAILED) {
-      perror(sdelta_filename);
-      exit(EXIT_FAILURE);
-  }
-  found.size = st.st_size;
-  MADVISE(found.buffer, found.size);
-#else
-/*  found.buffer  =  buffer_stream(stdin, &found.size); */
-
-  found.buffer = buffer_file( sdelta_filename, &found.size );
-#endif
-  
-  found.offset       =  44;  /* Skip the magic and 2 sha1 */
-  dwp                =  (DWORD *)&to.size;
-  dwp->byte.b3       =  found.buffer[found.offset++];
-  dwp->byte.b2       =  found.buffer[found.offset++];
-  dwp->byte.b1       =  found.buffer[found.offset++];
-  dwp->byte.b0       =  found.buffer[found.offset++];
-  found.pair         =  malloc ( found.size );
-  found.count        =  0;
-  line               =  0;
-
-  size          =  1;
-  while ( size !=  0 ) {
-
-    control     =  found.buffer[found.offset++];
-    dwp         =  (DWORD *)&found.pair[found.count].from;
-    dwp->dword  =  0;
-
-    switch ( control & 0xc0 ) {
-      case 0xc0 : dwp->byte.b3 = found.buffer[found.offset++];
-                  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x80:  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x40:  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      default:    dwp->byte.b0 = found.buffer[found.offset++];
-    }
-
-    dwp         =  (DWORD *)&found.pair[found.count].count;
-    dwp->dword  =  0;
-    switch ( control & 0x30 ) {
-      case 0x30 : dwp->byte.b3 = found.buffer[found.offset++];
-                  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x20:  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x10:  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      default:    dwp->byte.b0 = found.buffer[found.offset++];
-    }
-    size        =  found.pair[found.count].count;
-    dwp         =  (DWORD *)&stretch;
-    dwp->dword  =  0;
-
-    if  ( ( control & 2 )  == 2 ) {
-    switch ( control & 0x0c ) {
-      case 0x0c : dwp->byte.b3 = found.buffer[found.offset++];
-                  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x08:  dwp->byte.b2 = found.buffer[found.offset++];
-                  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      case 0x04:  dwp->byte.b1 = found.buffer[found.offset++];
-                  dwp->byte.b0 = found.buffer[found.offset++];
-                  break;
-      default:    dwp->byte.b0 = found.buffer[found.offset++];
-    }
-    line += stretch;
-    }
-
-    if ( verbosity > 1 )
-      fprintf(stderr, "block %i  control %x  stretch %i  to %i  count %i  from %i\n",
-              found.count,
-              control,
-              stretch,
-              line,
-              found.pair[found.count].count,
-              found.pair[found.count].from);
-
-            found.pair[found.count  ].to  = line;
-    line += found.pair[found.count++].count;
-
-  };
-
-  found.pair    =  realloc( found.pair, sizeof(PAIR) * found.count );
-
-  dwp           =  (DWORD *)&delta.size;
-  dwp->byte.b3  =  found.buffer[found.offset++];
-  dwp->byte.b2  =  found.buffer[found.offset++];
-  dwp->byte.b1  =  found.buffer[found.offset++];
-  dwp->byte.b0  =  found.buffer[found.offset++];
-
-  delta.buffer  =  found.buffer + found.offset;
-
-/*
-   from.buffer  =  found.buffer + found.offset + delta.size;
-   from.size    =  found.size   - found.offset - delta.size;
-   found.size   =  found.size   - from.size    - 24;
-*/
-#ifdef USE_MMAP
-    if (stat(dict_filename, &st) == -1) {
-  	perror(dict_filename);
-    	exit(EXIT_FAILURE);
-    }
-    if ((from_fd = open(dict_filename, O_RDONLY)) == -1) {
-	perror(dict_filename);
-	exit(EXIT_FAILURE);
-    }
-    if ((from.buffer = mmap(NULL, from_mmap_size = st.st_size, PROT_READ, MAP_PRIVATE, from_fd, 0)) == MAP_FAILED) {
-	perror(dict_filename);
-	exit(EXIT_FAILURE);
-    }
-    from.size = st.st_size;
-    MADVISE(from.buffer, from.size);
-#else
-   from.buffer  =  buffer_file( dict_filename, &from.size );
-#endif
-   
-   found.size   =  found.size   -  24;
-
+  if  ( from.buffer == NULL )  {
+           from.buffer  =  found.buffer + found.offset + delta.size;
+           from.size    =  found.size   - found.offset - delta.size;
+          found.size    =  found.size   - from.size    - 24;
+  } else  found.size   -=  24;
 
 
   td  =  mhash_init     ( MHASH_SHA1 );
@@ -905,24 +608,8 @@ void  make_to_new(char *dict_filename, char *sdelta_filename)  {
 
   fwrite( to.buffer, 1, to.offset, stdout );
 
-  free(   to.buffer);
-  
-#ifdef USE_MMAP
-  if (munmap(found.buffer, sdelta_mmap_size) == -1) {
-      fprintf(stderr, "munmap(from.buffer, %u) failed\n", sdelta_mmap_size);
-      /* exit(EXIT_FAILURE); */
-  }
-  close(sdelta_fd);
-  if (munmap(from.buffer, from_mmap_size) == -1) {
-      fprintf(stderr, "munmap(from.buffer, %u) failed\n", from_mmap_size);
-      /* exit(EXIT_FAILURE); */
-  }
-  close(from_fd);
-#else
-  free(found.buffer);
-  free( from.buffer);
-#endif
 }
+
 
 
 void  help(void)  {
@@ -949,22 +636,27 @@ void  help(void)  {
 }
 
 
-int  check_magic( char *n )  {
+void  parse_parameters( char *f1, char *f2)  {
+  size_t   s1,  s2;
+  char    *b1, *b2;
 
-  FILE *s;
-  char b[5];
+  b1=mmap_file( f1, &s1 );
+  b2=mmap_file( f2, &s2 );
 
-  s = fopen( n, "r" );
+  if ( memcmp( b2, &magic, 4 ) == 0 )
+        make_to     ( b1, s1, b2, s2 );
+  else  make_sdelta ( b1, s1, b2, s2 );
+  return;
+}
 
-  if   ( s  == NULL ) {
-    fprintf( stderr, "Problem opening %s\n", n);
-    exit(EXIT_FAILURE);
-  }
 
-  fread( b, 4, 1, s);
-  fclose(s);
-  return  memcmp( b, &magic, 4 );
+void  parse_stdin(void) {
+  size_t	 s;
+  char		*b;
 
+  b=mmap_stdin(&s);
+  make_to ( NULL, 0, b, s );
+  return;
 }
 
 
@@ -973,17 +665,10 @@ int	main	(int argc, char **argv)  {
   if  ( NULL !=  getenv("SDELTA_VERBOSE") )
     sscanf(      getenv("SDELTA_VERBOSE"), "%i", &verbosity );  
 
-  if  ( NULL !=  getenv("SDELTA_LAZY") ) {
-    sscanf(      getenv("SDELTA_LAZY"), "%i", &lazy );
-    if ( ( lazy < 4 ) || ( lazy > 40 ) )  lazy=4;
+  switch (argc) {
+    case  3 :  parse_parameters(argv[1], argv[2]);  break;
+    case  1 :  parse_stdin();                       break;
+    default :  help();                              break;
   }
-
-  if  (argc == 3)  {
-    if  ( check_magic( argv[2] ) == 0 )  make_to_new( argv[1], argv[2] );
-    else                                 make_sdelta( argv[1], argv[2] );
-  }
-
-  else  if	(argc == 1)  make_to();
-  else                       help();
   exit(EXIT_SUCCESS);
 }
