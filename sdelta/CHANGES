@@ -50,3 +50,11 @@ negligible speed improvement on linux.
 Thanks goes to Pavel Gorshkov <svinn@gmx.net> for finding
 that successive calls to realloc on FreeBSD even with an
 alternate malloc is far slower than a malloc.
+
+
+Fri Dec 31 20:39:52 UTC 2004	20041231	Kyle Sallee
+Made changes and improvements resulting in 
+30% speed increase in sdelta patch generation.
+# make bsd
+now compiles the source with the correct 
+library links for use on FreeBSD.
