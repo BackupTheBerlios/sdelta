@@ -9,10 +9,14 @@ Please read LICENSE if you have not already
 
 
 #include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
 
 #include "blocks.h"
+
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
