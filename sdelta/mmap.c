@@ -1,3 +1,6 @@
+#ifndef  _GNU_SOURCE
+#define  _GNU_SOURCE
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,9 +42,15 @@ unsigned char *mmap_file(char *n, size_t *c)  {
 
 /* This might very well reserve near 2G or 1G of address space?  */
 
+/*
 #ifdef __FreeBSD__
 #define MAX_MAP_ANON 0x7FFFFFFF
 #else
+#define MAX_MAP_ANON 0x40000000
+#endif
+*/
+
+#ifndef MAX_MAP_ANON
 #define MAX_MAP_ANON 0x40000000
 #endif
 
@@ -62,5 +71,7 @@ unsigned char *mmap_stdin(size_t *c) {
       exit(EXIT_FAILURE);
     }
   }
+  b = mremap( b, MAX_MAP_ANON, *c, MREMAP_MAYMOVE );
+  madvise( b, *c, MADV_SEQUENTIAL );
   return  b;
 }
