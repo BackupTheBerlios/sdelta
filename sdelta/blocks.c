@@ -63,26 +63,43 @@ static inline unsigned char	bp(unsigned char ch) {
 }
 
 
+#ifdef SDELTA_2
+
+
+#define  break_byte(a)  \
+  ( (a) == 0x0a ) ||    \
+  ( (a) == 0x00 ) ||    \
+  ( (a) == '/'  )
+/*
+ ||    \
+  ( (a) == '.'  )
+*/
+
+#define  breakp()             \
+  n = *p++,                   \
+  ( p < maxp )            &&  \
+  ( ! ( break_byte(n) ) ) ||  \
+  (   ( break_byte(l) )   &&  \
+      ( n == *p       ) )
+
+
+
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
   u_int32_t		i;
 
-#ifdef SDELTA_2
-  t    =  r    =  (u_int32_t *) malloc(s*4 + 64);
-#else
+  unsigned char		n, l;
+
   t    =  r    =  (u_int32_t *) malloc(s + 64);
-#endif
 
   max  =  b + s;
+  l = *p;
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-#ifdef SDELTA_2
-    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); bp(*p++)     && p < maxp;);
-#else
-    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); *p++ != 0x0a && p < maxp;);
-#endif
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);
+    l = n;
   };
 
   *t  =  s;
@@ -92,6 +109,34 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
   return  r;
 }
+
+
+#else  /* sdelta 1 style */
+
+u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
+  u_int32_t		*r, *t;
+  unsigned char		*p, *max, *maxp;
+  u_int32_t		i;
+
+  t    =  r    =  (u_int32_t *) malloc(s + 64);
+
+  max  =  b + s;
+
+  for ( p = b ; p < max ; t++) {
+    *t  =  p - b;
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); *p++ != 0x0a && p < maxp;);
+  };
+
+  *t  =  s;
+  i   =  ( t - r );
+  *c  =  i++;
+  r   =  (u_int32_t *) realloc(r, i * sizeof(u_int32_t));
+
+  return  r;
+}
+
+
+#endif
 
 
 DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
@@ -113,6 +158,29 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
 }
 
 
+#ifdef SDELTA_2
+
+
+unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
+
+  u_int32_t	*r;
+  u_int32_t	l, t;
+
+  r     =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
+
+  b--;
+
+  for ( l = t = 0; l < b; l++ )
+    r[t++] = l;
+
+  *c  =  t;
+   r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
+  return  r;
+}
+
+
+#else /* sdelta 1 style */
+
 unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
   u_int32_t	*r;
@@ -129,6 +197,8 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
    r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
   return  r;
 }
+
+#endif
 
 
 u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {

@@ -41,6 +41,141 @@ char	magic[]    =  { 0x13, 0x04, 00, 00 };
 int	verbosity  =  0;
 int	lazy	   =  4;
 
+#ifdef SDELTA_2
+
+void	output_sdelta(FOUND found, TO to, FROM from) {
+
+  DWORD			size, origin, stretch, unmatched_size;
+  unsigned char		byte_val;
+  int			block;
+  DWORD			*dwp;
+  unsigned int		offset_unmatched_size;
+  SHA_CTX		ctx;
+
+  found.buffer   =  malloc ( to.size );
+  memcpy( found.buffer,      magic,     4  );
+  memcpy( found.buffer + DIGEST_SIZE + 4, from.digest, DIGEST_SIZE );
+  found.offset   =  4 + 2 * DIGEST_SIZE;
+
+  dwp = (DWORD *)&to.size;
+  found.buffer[found.offset++] = dwp->byte.b3;
+  found.buffer[found.offset++] = dwp->byte.b2;
+  found.buffer[found.offset++] = dwp->byte.b1;
+  found.buffer[found.offset++] = dwp->byte.b0;
+
+  stretch.dword  =  0;
+  to.block       =  0;
+
+  for ( block = 0;  block < found.count ; block++ ) {
+
+    stretch.dword  =  found.pair[block].to.dword - to.block;
+    to.block       =  found.pair[block].to.dword + found.pair[block].count.dword;
+
+    /*
+    printf("to.index.natural[found.pair[block].to].offset  %i\n",
+            to.index.natural[found.pair[block].to].offset );
+    printf("block                     %i\n", block);
+    printf("found.pair[block].count   %i\n", found.pair[block].count);
+    printf("found.pair[block].from    %i\n", found.pair[block].from);
+    printf("found.pair[block].to      %i\n", found.pair[block].to);
+    printf("stretch                   %i\n", stretch.dword);
+    printf("\n");
+    */
+
+    /*
+    printf("\n");
+    printf("found.pair[block].to + size %i\n", found.pair[block].to + size);
+    printf("to.index.natural[found.pair[block].to + size].offset %i\n",
+            to.index.natural[found.pair[block].to + size].offset);
+    printf("\n");
+    */
+
+    origin.dword  =  found.pair[block].from.dword;
+      size.dword  =  found.pair[block].count.dword;
+      size.dword  =  from.index.natural[ origin.dword + size.dword ] -
+                     from.index.natural[ origin.dword ];
+/* *** */
+                                         byte_val  = 0x00;
+    if ( origin.dword     >= 0x1000000 ) byte_val |= 0xc0;  else
+    if ( origin.dword     >= 0x10000   ) byte_val |= 0x80;  else
+    if ( origin.dword     >= 0x100     ) byte_val |= 0x40;
+
+    if ( size.dword       >= 0x1000000 ) byte_val |= 0x30;  else
+    if ( size.dword       >= 0x10000   ) byte_val |= 0x20;  else
+    if ( size.dword       >= 0x100     ) byte_val |= 0x10;
+
+    if   ( stretch.dword  > 0 )  {       byte_val |= 0x02;
+      if ( stretch.dword  >= 0x1000000 ) byte_val |= 0x0c;  else
+      if ( stretch.dword  >= 0x10000   ) byte_val |= 0x08;  else
+      if ( stretch.dword  >= 0x100     ) byte_val |= 0x04;
+    }
+
+    found.buffer[found.offset++] =  byte_val;
+
+    if ( verbosity > 1 )
+      fprintf(stderr, "block %i  control %x  stretch %i  to %i  count %i  from %i  to.offset %i\n",
+              block, byte_val, stretch,
+              found.pair[block].to,
+              found.pair[block].count,
+              found.pair[block].from,
+              to.index.natural[found.pair[block].to.dword]);
+
+    if ( origin.dword  >=  0x1000000 ) found.buffer[found.offset++] = origin.byte.b3;
+    if ( origin.dword  >=  0x10000   ) found.buffer[found.offset++] = origin.byte.b2;
+    if ( origin.dword  >=  0x100     ) found.buffer[found.offset++] = origin.byte.b1;
+                                       found.buffer[found.offset++] = origin.byte.b0;
+
+    if ( size.dword    >=  0x1000000 ) found.buffer[found.offset++] = size.byte.b3;
+    if ( size.dword    >=  0x10000   ) found.buffer[found.offset++] = size.byte.b2;
+    if ( size.dword    >=  0x100     ) found.buffer[found.offset++] = size.byte.b1;
+                                       found.buffer[found.offset++] = size.byte.b0;
+
+    if (   stretch.dword  >   0 ) {
+      if ( stretch.dword  >=  0x1000000 ) found.buffer[found.offset++] = stretch.byte.b3;
+      if ( stretch.dword  >=  0x10000   ) found.buffer[found.offset++] = stretch.byte.b2;
+      if ( stretch.dword  >=  0x100     ) found.buffer[found.offset++] = stretch.byte.b1;
+                                          found.buffer[found.offset++] = stretch.byte.b0;
+    }
+  }
+
+         unmatched_size.dword   =  0;
+  offset_unmatched_size         =  found.offset;
+  found.offset                 +=  4;
+     to.offset                  =  0;
+
+  for ( block = 0; block < found.count ; block++ ) {
+    stretch.dword    =  to.index.natural[found.pair[block].to.dword]  -  
+                        to.offset;
+
+    if  ( stretch.dword > 0 ) {
+      memcpy ( found.buffer + found.offset,
+                  to.buffer +    to.offset, stretch.dword );
+
+      unmatched_size.dword  += stretch.dword;
+      found.offset          += stretch.dword;
+    }
+    to.offset     = to.index.natural[found.pair[block].to.dword +
+                                     found.pair[block].count.dword ];
+  }
+
+  found.buffer[offset_unmatched_size++] = unmatched_size.byte.b3;
+  found.buffer[offset_unmatched_size++] = unmatched_size.byte.b2;
+  found.buffer[offset_unmatched_size++] = unmatched_size.byte.b1;
+  found.buffer[offset_unmatched_size++] = unmatched_size.byte.b0;
+
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, found.buffer + 4 + DIGEST_SIZE, found.offset - (4 + DIGEST_SIZE));
+  SHA1_Final(found.buffer + 4, &ctx);
+
+  fwrite( found.buffer, 1, found.offset, stdout );
+  free(found.buffer);
+
+}
+
+
+#else  /* sdelta 1 style */
+
+
 void	output_sdelta(FOUND found, TO to, FROM from) {
 
   DWORD			size, origin, stretch, unmatched_size;
@@ -169,6 +304,9 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 }
 
 
+#endif
+
+
 #define  leap(frog) \
   if ( start >= frog ) { \
     from.block   =   from.index.ordered[where + frog]; \
@@ -194,6 +332,219 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 #define leap_0x4000()  leap(0x4000)   leap_0x2000
 #define leap_0x8000()  leap(0x8000)   leap_0x4000
 #define leap_0x10000() leap(0x10000)  leap_0x8000
+
+
+#ifdef SDELTA_2
+
+void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
+  FROM			from;
+  TO			to;
+  MATCH			match;
+  FOUND			found;
+  unsigned int		count, line, total, where, start, finish, limit;
+  u_int16_t		tag;
+  QWORD			crc, fcrc;
+  pthread_t		from_thread, to_thread, sha1_thread;
+  SHA_CTX		ctx;
+
+
+void  *prepare_to(void *nothing)  {
+  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
+  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
+  return NULL;
+}
+
+
+void  *prepare_from(void *nothing)  {
+  make_index  ( &from.index, from.buffer, from.size );
+  /* MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM ); */
+  return NULL;
+}
+
+
+void  *prepare_sha1(void *nothing)  {
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, from.buffer, from.size);
+  SHA1_Final(from.digest, &ctx);
+  return NULL;
+}
+
+  from.buffer = from_ibuf->buf;
+  to.buffer   =   to_ibuf->buf;
+  from.size   = from_ibuf->size;
+  to.size     =   to_ibuf->size;
+
+  pthread_create(   &to_thread, NULL, prepare_to,   NULL );
+  pthread_create( &from_thread, NULL, prepare_from, NULL );
+  pthread_join  (    to_thread, NULL );
+  pthread_join  (  from_thread, NULL );
+  pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
+
+  found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
+  found.count       =  0;
+  to.block          =  0;
+
+  to.index.ordereds = to.index.naturals - 1;
+  while  ( to.index.ordereds  >  to.block )  {
+
+    if   ( ( to.index.natural[to.block + 2] -
+             to.index.natural[to.block    ] ) >= 0x02 ) {
+
+      tag            =  qtag( crc = *(QWORD *)( to.index.crc + to.block ) );
+      start          =  from.index.tags[tag].range;
+
+      if  ( start == 0 )  {  to.block++;  continue;  }
+
+      where  =  from.index.tags[tag].index;
+      finish =  where + start;
+      start--;
+
+      while ( start >= 0x10000 )
+      leap(0x10000);
+      leap(0x8000);
+      leap(0x4000);
+      leap(0x2000);
+      leap(0x1000);
+      leap(0x800);
+      leap(0x400);
+      leap(0x200);
+      leap(0x100);
+      leap(0x80);
+      leap(0x40);
+      leap(0x20);
+      leap(0x10);
+      leap(0x8);
+      leap(0x4);
+      leap(0x2);
+      leap(0x1);
+
+      match.count    =  1;
+         to.limit    =  to.index.naturals - to.block;
+
+      from.block  =  from.index.ordered[where]; 
+      fcrc        =  *(QWORD *)( from.index.crc + from.block );
+
+      while ( ( where       <   finish                )  &&
+              ( crc.qword   >   fcrc.qword            )  &&
+              ( ++where     <   from.index.ordereds   )
+            )
+      {  from.block  =  from.index.ordered[where];
+         fcrc        =  *(QWORD *)( from.index.crc + from.block );
+      }
+
+      while ( crc.qword  ==  fcrc.qword ) {
+
+        count       =  2;
+        from.limit  =  from.index.naturals - from.block;
+
+        if ( to.limit > from.limit )
+          limit  =      from.limit;  else
+          limit  =        to.limit;
+
+        if ( ( count > match.count ) ||
+             ( from.index.crc[from.block + match.count].dword ==
+                 to.index.crc[  to.block + match.count].dword ) )
+          while  ( ( count < limit )  &&
+                   ( from.index.crc[from.block + count].dword ==
+                       to.index.crc[  to.block + count].dword ) )
+            count++;
+
+        while ( count > match.count ) {
+          if ( memcmp( from.index.natural[from.block] + from.buffer,
+                        to.index.natural[   to.block] +   to.buffer,
+                        to.index.natural[   to.block + count] -
+                        to.index.natural[   to.block        ]
+                       ) == 0 ) {
+            match.line   =  from.block;
+            match.count  =  count;
+            count  =  0;
+          } else  count--;
+        }
+
+        if ( ++where  < from.index.ordereds ) {
+          from.block  = from.index.ordered[where];
+          fcrc        =  *(QWORD *)( from.index.crc + from.block );
+        } else break;
+
+      }  /* finished finding matches for to.block */
+
+      if ( match.count > 1 ) {
+        found.pair[found.count].to.dword      =     to.block;
+        found.pair[found.count].from.dword    =  match.line;
+        found.pair[found.count].count.dword   =  match.count;
+        to.block                             +=  match.count;
+        found.count++;
+      } else  to.block++;
+    } else    to.block++;
+  }
+
+  found.pair[found.count  ].to.dword     =  to.index.naturals;
+  found.pair[found.count  ].from.dword   =  0;
+  found.pair[found.count++].count.dword  =  0;
+  found.pair                             =  realloc ( found.pair, sizeof(PAIR) * found.count );
+
+  if ( verbosity > 0 ) {
+    fprintf(stderr, "Statistics for sdelta generation.\n");
+
+    fprintf(stderr, "Blocks in from                      %i\n", from.index.naturals);
+    fprintf(stderr, "Blocks in to                        %i\n",   to.index.naturals);
+    fprintf(stderr, "Sorted blocks in from               %i\n", from.index.ordereds);
+
+    total=0;
+    for ( where = 0; where < found.count; where++)
+      total += found.pair[where].count.dword;
+    fprintf(stderr, "Matching blocks                     %i\n", total);
+    fprintf(stderr, "Umatched blocks                     %i\n", to.index.naturals - total);
+
+    fprintf(stderr, "Matching blocks sequences           %i\n", found.count);
+
+    total=0;
+    for ( where = 0; where < found.count; where++)
+      if (found.pair[where].count.dword > 1 )  total++;
+    fprintf(stderr, "Matches with consecutive sequences  %i\n", total);
+
+    total=0;
+    for ( where = 0; where < found.count - 1; where++)
+      if  ( ( found.pair[where].to.dword +
+              found.pair[where].count.dword )  ==
+              found.pair[where+1].to.dword  )
+        total++;
+    fprintf(stderr, "Adjacent matching blocks sequences  %i\n", total);
+
+    total=0;
+    for ( where = 0; where < found.count; where++) {
+      line = found.pair[where].to.dword; 
+      for ( count = 0 ; count < found.pair[where].count.dword ; count++) {
+       total += to.index.natural[line + 1] -
+                to.index.natural[line    ];
+       line++;
+      }
+    }
+
+    fprintf(stderr, "Bytes in to                         %i\n", to.size);
+    fprintf(stderr, "Bytes matched                       %i\n", total);
+    fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
+  }
+
+/*  free   (  from.index.natural     );  */
+  free   (  from.index.crc         );
+  free   (  from.index.ordered     );
+
+  pthread_join  ( sha1_thread, NULL );
+  unload_buf(from_ibuf);
+
+  output_sdelta(found, to, from);
+
+  unload_buf(to_ibuf);
+  free   (  from.index.natural     );
+  free   (    to.index.natural     );
+  free   (    to.index.crc         );
+  free   ( found.pair              );
+
+}
+
+
+#else  /* sdelta 1 style */
 
 
 void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
@@ -402,6 +753,8 @@ void  *prepare_sha1(void *nothing)  {
 
 }
 
+
+#endif
 
 
 void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {

@@ -115,12 +115,15 @@ typedef struct INDEX {
 #define  SDELTA_2
 */
 
+/*
 #ifdef   SDELTA_2
 #define  MAX_BLOCK_SIZE 0xff
 #else
+*/
 #define  MAX_BLOCK_SIZE 0x7f
+/*
 #endif
-
+*/
 
 u_int32_t  *natural_block_list  (unsigned char *, int,             int *);
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
