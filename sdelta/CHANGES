@@ -98,7 +98,7 @@ improve speed of sdelta generation on SMP boxes with adequate
 RAM to avoid swapping or re-reading of mmaped files.
 
 
-Sun Jan 16 22:11:32 UTC 2005			Kyle Sallee
+Sun Jan 16 22:11:32 UTC 2005	20040117	Kyle Sallee
 Reviewed source to remove some insignifigantly buggy code.
 Modified the way tag values are calculated to require the
 crc for the desired block and following block to create 
