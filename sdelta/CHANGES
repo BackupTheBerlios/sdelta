@@ -173,3 +173,14 @@ to the type specified by the wanted filename.
 Wed Mar 16 01:32:45 UTC 2005	20050316	Kyle Sallee
 The sdreq client has been enhanced to generate better
 matches between the sources a box has and wanted sources.
+
+
+Tue Mar 22 22:40:52 UTC 2005	20050322	Kyle Sallee
+New location/modification for downloading patches and sources.
+This change was to make it easier to rsync mirror the PPR's
+patches and optimially compressed source tarballs.
+What used to be:
+http://ibiblio.org/sdelta/patches/ and
+http://ibiblio.org/sdelta/sources/  is now
+http://ibiblio.org/sdelta/files/patches/
+http://ibiblio.org/sdelta/files/sources/, respectively.
