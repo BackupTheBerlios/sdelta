@@ -76,3 +76,8 @@ Thanks goes to Pavel Gorshkov <svinn@gmx.net> for introducing
 a one line change in blocks.c that slightly improve the speed 
 of which the natural block list is generated for files that 
 have lines exceeding 127 bytes.
+
+Tue Jan  4 23:03:29 UTC 2005	20040104	Kyle Sallee
+Made sorting faster.
+Eliminated a bug in sdelta.c where I placed a 
+break when I really wanted a continue command.

@@ -196,7 +196,7 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
 
 
 #define  leap(frog) \
-  if ( start > frog ) { \
+  if ( start >= frog ) { \
     from.block   =   from.index.ordered[where + frog]; \
     fcrc0.dword  =   from.index.crc[from.block].dword; \
     if ( crc0.dword  >  fcrc0.dword  ) { \
@@ -313,12 +313,14 @@ void  make_sdelta(char *fromfilename, char *tofilename)  {
       crc0.dword     =  to.index.crc[to.block    ].dword;
       crc1.dword     =  to.index.crc[to.block + 1].dword;
       tag            =  crc_tag ( crc0 );
-      where          =  from.index.tags[tag].index;
+      start          =  from.index.tags[tag].range;
 
-      if  ( where   ==  0xffffffff ) break;
-      start = from.index.tags[tag].range - 1;
- 
-      while ( start > 0x10000 )
+      if  ( start == 0 )  {  to.block++;  continue;  }
+
+      start--;
+      where  =  from.index.tags[tag].index;
+
+      while ( start >= 0x10000 )
       leap(0x10000);
       leap(0x8000);
       leap(0x4000);
