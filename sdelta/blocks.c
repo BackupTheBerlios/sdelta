@@ -51,7 +51,7 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
   u_int32_t		*r, *t;
-  unsigned char		*p, *a, *max, *maxp;
+  unsigned char		*p, *max, *maxp;
   u_int32_t		i;
 
   t    =  r    =  (u_int32_t *) malloc(s + 64);
@@ -59,7 +59,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    for (maxp = (a = p) + MIN(MAX_BLOCK_SIZE, max - p); *p++ != 0x0a && p < maxp;);
+    for (maxp = MIN(p + MAX_BLOCK_SIZE, max); *p++ != 0x0a && p < maxp;);
   }
 
   *t  =  s;
@@ -121,12 +121,12 @@ u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
 
 TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigned int c ) {
 
-  unsigned int	l, o;
+  /* unsigned int	l, o; */
   int		loop;
   u_int16_t	t;
   u_int16_t	*tag;
   TAG		*tags;
-  DWORD		crc;
+  /* DWORD		crc; */
 
   static int  compare_tag (const void *v0, const void *v1)  {
     return  tag[*(u_int32_t *)v0] - tag[*(u_int32_t *)v1];
