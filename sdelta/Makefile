@@ -6,8 +6,11 @@ LDFLAGS ?= -Wl,-s
 
 .PHONY: all bsd install clean
 
+sdelta2: *.c *.h
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta2 -DSDELTA_2
+
 sdelta: *.c *.h
-	 $(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta
 
 all: sdelta
 
