@@ -67,8 +67,8 @@ static inline unsigned char	bp(unsigned char ch) {
 
 
 #define  break_byte(a)  \
-  ( (a) == 0x0a ) ||    \
   ( (a) == 0x00 ) ||    \
+  ( (a) == 0x0a ) ||    \
   ( (a) == '/'  ) ||    \
   ( (a) == '.'  )
 

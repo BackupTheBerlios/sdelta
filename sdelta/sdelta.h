@@ -31,12 +31,6 @@ typedef struct MATCH {
 } MATCH;
 
 
-typedef struct LIMIT {
-  u_int32_t	head;
-  u_int32_t	tail,   to_tail,  from_tail;
-  u_int32_t	block,  to_block, from_block;
-} LIMIT;
-
 typedef struct PAIR {
   DWORD		to, from, size;
 } PAIR;

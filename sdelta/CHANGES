@@ -204,3 +204,9 @@ Considering that the sdelta PPR is already running near
 You can make sdelta2 by typing make sdelta2, but you must
 manually install it and I have not updated the sd wrapper
 to support sdelta 2 archive files yet.
+
+
+Tue Apr 19 21:19:22 UTC 2005	no release yet	Kyle Sallee
+Slightly optimized sdelta2 code,
+added support for sdelta2 patch files into the sd wrapper,
+wrote SDELTA2_README to explain what it is.

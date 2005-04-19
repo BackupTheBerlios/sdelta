@@ -24,9 +24,9 @@ The destination box has only:   gcc-3.4.1.tar.bz2
 
 First, create a sdelta patch file.
 
-$ sd  gcc-3.4.1  gcc-3.4.3  gcc-3.4.1-gcc-3.4.3.sdelta.bz2
+$ sd  gcc-3.4.1  gcc-3.4.3  gcc-3.4.1-gcc-3.4.3.sd.bz2
 
-Next, send gcc-3.4.1-gcc-3.4.3.sdelta.bz2 to the destination box.
+Next, send gcc-3.4.1-gcc-3.4.3.sd.bz2 to the destination box.
 Finally, run sd to apply the patch and generate the desired file.
 
 $ sd  gcc-3.4.1  gcc-3.4.1-gcc-3.4.3  gcc-3.4.3.tar.bz2

@@ -29,6 +29,7 @@ root()  {
          R="${R%.gz}"
          R="${R/.tgz/.tar}"
          R="${R%.sdelta}"
+         R="${R%.sd2}"
          R="${R%.sd}"
   echo "$R"
 }
@@ -112,6 +113,9 @@ guess()  {
   elif  [  -f  "$R.sd.7z"      ];  then  echo  "$R.sd.7z"
   elif  [  -f  "$R.sd.bz2"     ];  then  echo  "$R.sd.bz2"
   elif  [  -f  "$R.sd.gz"      ];  then  echo  "$R.sd.gz"
+  elif  [  -f  "$R.sd2.7z"     ];  then  echo  "$R.sd2.7z"
+  elif  [  -f  "$R.sd2.bz2"    ];  then  echo  "$R.sd2.bz2"
+  elif  [  -f  "$R.sd2.gz"     ];  then  echo  "$R.sd2.gz"
   elif  [  -f  "$R.7z"         ];  then  echo  "$R.7z"
   elif  [  -f  "$R.bz2"        ];  then  echo  "$R.bz2"
   elif  [  -f  "$R.gz"         ];  then  echo  "$R.gz"
@@ -193,7 +197,11 @@ then  R0="$R2";  D0="$D2"
       R1="$R0";  D1="$D0"
 fi
 
-sdelta "$D1"  "$D2"  >  "$R3"
+if    echo  "$D2$D3"  |  grep  -q  "\.sd2"
+then  sdelta2 "$D1"  "$D2"  >  "$R3"
+else  sdelta  "$D1"  "$D2"  >  "$R3"
+fi
+
 RET=$?
 
 if    [  "$R1"  !=  "$D1"  ];  then  rm  -f           "$D1";  fi

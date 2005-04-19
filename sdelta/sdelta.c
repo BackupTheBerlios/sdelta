@@ -237,8 +237,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   TO			to;
   MATCH			match, potential;
   FOUND			found;
-  LIMIT			limit;
-  unsigned int		count, line, total, where, start, finish;
+  unsigned int		count, limit, line, total, where, start, finish;
   u_int16_t		tag;
   QWORD			crc, fcrc;
   pthread_t		from_thread, to_thread, sha1_thread;
@@ -325,7 +324,7 @@ void  *prepare_sha1(void *nothing)  {
 
       match.blocks   =  1;
       match.total    =  0;
-      limit.to_block =  to.index.naturals - to.block;
+         to.limit    =  to.index.naturals - to.block;
 
       from.block  =  from.index.ordered[where]; 
       fcrc        =  *(QWORD *)( from.index.crc + from.block );
@@ -341,13 +340,13 @@ void  *prepare_sha1(void *nothing)  {
       while ( crc.qword  ==  fcrc.qword ) {
 
         count             =  2;
-        limit.from_block  =  from.index.naturals - from.block;
-        limit.block       =  MIN ( limit.to_block, limit.from_block );
+        from.limit        =  from.index.naturals - from.block;
+        limit             =  MIN ( to.limit, from.limit );
 
         if ( ( count > match.blocks ) ||
              ( from.index.crc[from.block + match.blocks].dword ==
                  to.index.crc[  to.block + match.blocks].dword ) )
-          while  ( ( count < limit.block )  &&
+          while  ( ( count < limit )  &&
                    ( from.index.crc[from.block + count].dword ==
                        to.index.crc[  to.block + count].dword ) )
             count++;
@@ -361,21 +360,25 @@ void  *prepare_sha1(void *nothing)  {
             potential.size   = to.index.natural[   to.block + count] -
                                to.offset;
             from.offset      =  from.index.natural[from.block];
-            limit.from_tail  =  from.size - from.offset;
-            limit.to_tail    =    to.size -   to.offset;
-            limit.tail       = MIN ( limit.to_tail, limit.from_tail );
-            limit.tail      -= potential.size;
-            limit.head       = MIN ( to.offset, from.offset);
             potential.head   =
             potential.tail   = 0;
-            while ( ( potential.head < limit.head ) &&
-                    ( from.buffer[from.offset - 1 - potential.head ] ==
-                        to.buffer[  to.offset - 1 - potential.head ] )
-                  ) potential.head++;
-            while ( ( potential.tail < limit.tail ) &&
-                    ( from.buffer[from.offset + potential.size + potential.tail]  ==
-                        to.buffer[  to.offset + potential.size + potential.tail] )
-                  ) potential.tail++;
+
+            if ( ( from.block > 0 ) &&
+                 (  to.block  > 0 ) ) {
+               here =   to.buffer +   to.offset - 1;
+              there = from.buffer + from.offset - 1;
+              while ( here[-potential.head] == there[-potential.head] )
+                potential.head++;
+            }
+
+            if ( ( from.block + count < from.index.naturals ) &&
+                 (   to.block + count <   to.index.naturals ) ) {
+               here =   to.buffer +   to.offset + potential.size;
+              there = from.buffer + from.offset + potential.size;
+              while ( here[potential.tail] == there[potential.tail] )
+                potential.tail++;
+            }
+
             potential.total =  potential.size + potential.head + potential.tail;
             
             if ( potential.total > match.total ) {
@@ -649,6 +652,26 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   unload_buf(found_ibuf);
 }
 
+
+void  help(void)  {
+  printf("\nsdelta designed programmed and copyrighted by\n");
+  printf("Kyle Sallee in 2004, 2005, All Rights Reserved.\n");
+  printf("sdelta2 is distributed under the Sorcerer Public License version 1.1\n");
+  printf("Please read /usr/doc/sdelta/LICENSE\n\n");
+
+  printf("sdelta records the differences between source tarballs.\n");
+  printf("First, sdelta2 can make a delta patch between two files.\n");
+  printf("Then,  sdelta2 can make the second file when given both\n");
+  printf("the previously generated delta file and the first file.\n\n");
+
+  printf("Below is an example to make a bzip2 compressed sdelta patch file.\n\n");
+  printf("$ sdelta2 linux-2.6.7.tar linux-2.6.8.1.tar > linux-2.6.7-2.6.8.1.tar.sd2\n");
+  printf("$ bzip2   linux-2.6.7-2.6.8.1.tar.sd2\n\n\n");
+  printf("Below is an example for making linux-2.6.8.1.tar\n\n");
+  printf("$ bunzip2 linux-2.6.7-2.6.8.1.tar.sd2.bz2\n");
+  printf("$ sdelta2 linux-2.6.7.tar linux-2.6.7-2.6.8.1.tar.sd2 > linux-2.6.8.1.tar\n");
+  exit(EXIT_FAILURE);
+}
 
 #else  /* sdelta 1 style */
 
@@ -1169,28 +1192,28 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   unload_buf(found_ibuf);
 }
 
-#endif /* sdelta 1 style */
-
 
 void  help(void)  {
   printf("\nsdelta designed programmed and copyrighted by\n");
-  printf("Kyle Sallee in 2004, All Rights Reserved.\n");
+  printf("Kyle Sallee in 2004, 2005, All Rights Reserved.\n");
   printf("sdelta is distributed under the Sorcerer Public License version 1.1\n");
   printf("Please read /usr/doc/sdelta/LICENSE\n\n");
 
   printf("sdelta records the differences between source tarballs.\n");
   printf("First, sdelta can make a delta patch between two files.\n");
   printf("Then,  sdelta can make the second file when given both\n");
-  printf("the previously generated sdelta and the first file.\n\n");
+  printf("the previously generated delta file and the first file.\n\n");
 
   printf("Below is an example to make a bzip2 compressed sdelta patch file.\n\n");
-  printf("$ sdelta linux-2.6.7.tar linux-2.6.8.1.tar > linux-2.6.7-2.6.8.1.tar.sdelta\n");
-  printf("$ bzip2  linux-2.6.7-2.6.8.1.tar.sdelta\n\n\n");
+  printf("$ sdelta linux-2.6.7.tar linux-2.6.8.1.tar > linux-2.6.7-2.6.8.1.tar.sd\n");
+  printf("$ bzip2  linux-2.6.7-2.6.8.1.tar.sd\n\n\n");
   printf("Below is an example for making linux-2.6.8.1.tar\n\n");
-  printf("$ bunzip2 linux-2.6.7-2.6.8.1.tar.sdelta.bz2\n");
-  printf("$ sdelta  linux-2.6.7.tar linux-2.6.7-2.6.8.1.tar.sdelta > linux-2.6.8.1.tar\n");
+  printf("$ bunzip2 linux-2.6.7-2.6.8.1.tar.sd.bz2\n");
+  printf("$ sdelta  linux-2.6.7.tar linux-2.6.7-2.6.8.1.tar.sd > linux-2.6.8.1.tar\n");
   exit(EXIT_FAILURE);
 }
+
+#endif /* sdelta 1 style */
 
 
 void  parse_parameters( char *f1, char *f2)  {
