@@ -125,6 +125,13 @@ fprintf(stderr,"stretch -%i\n",stretch.dword);
 
     origin.dword   =  found.pair[block].from.dword;
       size.dword   =  found.pair[block].size.dword;
+
+/* *** */
+
+    if  ( ( 7           >  size.dword  ) &&
+          ( block + 1  !=  found.count )
+        ) { found.pair[block].size.dword = 1; continue; }
+
         to.offset  =  found.pair[block].to.dword + size.dword;
 
 /*
@@ -199,6 +206,9 @@ fprintf(stderr,"blk %i  to %i  from %i  size %i\n",
      to.offset                  =  0;
 
   for ( block = 0; block < found.count ; block++ ) {
+
+/* *** */
+    if ( found.pair[block].size.dword == 1 )  continue;
 
     stretch.dword    =  found.pair[block].to.dword  -  to.offset;
 
@@ -460,9 +470,11 @@ void  *prepare_sha1(void *nothing)  {
     fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
   }
 
-/*  free   (  from.index.natural     );  */
+  free   (  from.index.natural     );
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
+  free   (    to.index.natural     );
+  free   (    to.index.crc         );
 
   pthread_join  ( sha1_thread, NULL );
   unload_buf(from_ibuf);
@@ -470,9 +482,6 @@ void  *prepare_sha1(void *nothing)  {
   output_sdelta(found, to, from);
 
   unload_buf(to_ibuf);
-  free   (  from.index.natural     );
-  free   (    to.index.natural     );
-  free   (    to.index.crc         );
   free   ( found.pair              );
 
 }
@@ -513,10 +522,44 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   dwp->byte.b2       =  found.buffer[found.offset++];
   dwp->byte.b1       =  found.buffer[found.offset++];
   dwp->byte.b0       =  found.buffer[found.offset++];
-  /* in rare cases found.size may not be enough */
-  found.pair         =  malloc ( found.size * 2);
   found.count        =  0;
   line               =  0;
+
+  size          =  1;
+  while ( size !=  0 ) {
+
+    control     =  found.buffer[found.offset++];
+
+    switch ( control & 0xc0 ) {
+      case 0xc0: found.offset += 4;  break;
+      case 0x80: found.offset += 3;  break;
+      case 0x40: found.offset += 2;  break;
+      default:   found.offset++;     break;
+    }
+
+    switch ( control & 0x30 ) {
+      case 0x30: found.offset += 4;  break;
+      case 0x20: found.offset += 3;  break;
+      case 0x10: found.offset += 2;  break;
+      default:   size = found.buffer[found.offset++]; break;
+    }
+
+    if  ( ( control & 2 )  == 2 ) {
+      switch ( control & 0x0c ) {
+        case 0x0c: found.offset += 4;  break;
+        case 0x08: found.offset += 3;  break;
+        case 0x04: found.offset += 2;  break;
+        default:   found.offset++;     break;
+      }
+    }
+    found.count++;
+  };
+
+/* *** */
+  found.pair         =  malloc ( sizeof(FOUND) * found.count );
+  found.count        =  0;
+  found.offset       =  8 + 2 * DIGEST_SIZE;
+  /* Skip the magic and 2 sha1 and to size */
 
   size          =  1;
   while ( size !=  0 ) {

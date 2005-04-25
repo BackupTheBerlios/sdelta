@@ -129,12 +129,12 @@ typedef struct INDEX {
 #endif
 */
 
-u_int32_t  *natural_block_list  (unsigned char *, int,             int *);
+u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
 DWORD      *crc_list_sig        (unsigned char *, u_int32_t     *, int, int *);
 void        make_index          (INDEX         *, unsigned char *, int);
 
 /*
-LINE	*natural_block_list	(unsigned char *, int,             int *);
+LINE	*natural_block_list	(unsigned char *, int,             u_int32_t *);
 INDEX	*make_index		(INDEX         *, unsigned char *, int);
 */

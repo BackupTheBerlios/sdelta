@@ -82,7 +82,7 @@ static inline unsigned char	bp(unsigned char ch) {
 
 
 
-u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
+u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
   u_int32_t		i;
@@ -111,7 +111,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
 
 #else  /* sdelta 1 style */
 
-u_int32_t	*natural_block_list(unsigned char *b, int s, int *c) {
+u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
   u_int32_t		i;
@@ -219,12 +219,20 @@ TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigne
   TAG		*tags;
   /* DWORD		crc; */
 
+#if __GNUC__ >= 4
+  auto int  compare_tag (const void *v0, const void *v1)  {
+#else
   static int  compare_tag (const void *v0, const void *v1)  {
+#endif
     return  tag[*(u_int32_t *)v0] - tag[*(u_int32_t *)v1];
   }
 
 
+#if __GNUC__ >= 4
+  auto int  compare_crc (const void *v0, const void *v1)  {
+#else
   static int  compare_crc (const void *v0, const void *v1)  {
+#endif
     u_int32_t	 p0,  p1;
     QWORD        q0,  q1;
 
