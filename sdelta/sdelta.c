@@ -383,14 +383,25 @@ void  *prepare_sha1(void *nothing)  {
 
             if ( ( from.block + count < from.index.naturals ) &&
                  (   to.block + count <   to.index.naturals ) ) {
-               here =   to.buffer +   to.offset + potential.size;
-              there = from.buffer + from.offset + potential.size;
-              while ( here[potential.tail] == there[potential.tail] )
+               limit=MIN( from.size   - from.offset - potential.size,
+                            to.size   -   to.offset - potential.size );
+               here =       to.buffer +   to.offset + potential.size;
+              there =     from.buffer + from.offset + potential.size;
+              while ( ( limit                >        potential.tail  ) &&
+                      ( here[potential.tail] == there[potential.tail] ) )
                 potential.tail++;
             }
 
+/*
+            fprintf(stderr, "fb %i, tb %i, fo %i, to %i, pb %i, ps %i, pt %i, lm %i\n",
+              from.block, to.block,
+              from.offset, to.offset,
+              potential.blocks, potential.size,
+              potential.tail, limit);
+*/
+
             potential.total =  potential.size + potential.head + potential.tail;
-            
+
             if ( potential.total > match.total ) {
               match.blocks       =                potential.blocks;
               match.to_offset    =    to.offset - potential.head;
