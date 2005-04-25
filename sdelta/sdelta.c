@@ -648,7 +648,10 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
 
   };
 
+/* Realloc no longer required since precisely sized based upon count */
+/*
   found.pair    =  realloc( found.pair, sizeof(PAIR) * found.count );
+*/
 
   dwp           =  (DWORD *)&delta.size;
   dwp->byte.b3  =  found.buffer[found.offset++];
