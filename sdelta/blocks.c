@@ -92,7 +92,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   t    =  r    =  (u_int32_t *) malloc(s + 64);
 
   max  =  b + s;
-  l = *b;
+  l    = 0xff;
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
