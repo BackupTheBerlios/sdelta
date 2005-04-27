@@ -441,44 +441,17 @@ void  *prepare_sha1(void *nothing)  {
   if ( verbosity > 0 ) {
     fprintf(stderr, "Statistics for sdelta generation.\n");
 
-    fprintf(stderr, "Blocks in from                      %i\n", from.index.naturals);
-    fprintf(stderr, "Blocks in to                        %i\n",   to.index.naturals);
-    fprintf(stderr, "Sorted blocks in from               %i\n", from.index.ordereds);
+    fprintf(stderr, "Blocks in from               %i\n", from.index.naturals);
+    fprintf(stderr, "Blocks in to                 %i\n",   to.index.naturals);
+    fprintf(stderr, "Sorted blocks in from        %i\n", from.index.ordereds);
 
     total=0;
     for ( where = 0; where < found.count; where++)
       total += found.pair[where].size.dword;
-    fprintf(stderr, "Matching blocks                     %i\n", total);
-    fprintf(stderr, "Umatched blocks                     %i\n", to.index.naturals - total);
+    fprintf(stderr, "Tentative Matching bytes     %i\n",           total);
+    fprintf(stderr, "Tentative Umatched bytes     %i\n", to.size - total);
+    fprintf(stderr, "Tentative Matched sequences  %i\n", found.count);
 
-    fprintf(stderr, "Matching blocks sequences           %i\n", found.count);
-
-    total=0;
-    for ( where = 0; where < found.count; where++)
-      if (found.pair[where].size.dword > 1 )  total++;
-    fprintf(stderr, "Matches with consecutive sequences  %i\n", total);
-
-    total=0;
-    for ( where = 0; where < found.count - 1; where++)
-      if  ( ( found.pair[where].to.dword +
-              found.pair[where].size.dword )  ==
-              found.pair[where+1].to.dword  )
-        total++;
-    fprintf(stderr, "Adjacent matching blocks sequences  %i\n", total);
-
-    total=0;
-    for ( where = 0; where < found.count; where++) {
-      line = found.pair[where].to.dword; 
-      for ( count = 0 ; count < found.pair[where].size.dword ; count++) {
-       total += to.index.natural[line + 1] -
-                to.index.natural[line    ];
-       line++;
-      }
-    }
-
-    fprintf(stderr, "Bytes in to                         %i\n", to.size);
-    fprintf(stderr, "Bytes matched                       %i\n", total);
-    fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
   }
 
   free   (  from.index.natural     );
