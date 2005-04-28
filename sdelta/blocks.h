@@ -115,19 +115,8 @@ typedef struct INDEX {
   TAG		*tags;
 } INDEX;
 
-/*
-#define  SDELTA_2
-*/
-
-/*
-#ifdef   SDELTA_2
-#define  MAX_BLOCK_SIZE 0xff
-#else
-*/
 #define  MAX_BLOCK_SIZE 0x7f
-/*
-#endif
-*/
+#define  MAX_PAD_SIZE   0x20
 
 u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);

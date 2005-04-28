@@ -49,20 +49,6 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 }
 
 
-static inline unsigned char	bp(unsigned char ch) {
-/* Null padding is not matchable at start of block sequence.
-   Amount of blocks greatly increases.
-   Generates smaller bzip2 and 7za compressible patches
-   Generates sdelta patches faster.
-   Wastes much more memory.
-   Costs much more in CPU
-   This is a bad regression toward attempting 
-   to match at every offset.
- */
-  return  ( ch != 0x0a ) && ( ch != 0x00 );
-}
-
-
 #ifdef SDELTA_2
 
 
@@ -72,14 +58,34 @@ static inline unsigned char	bp(unsigned char ch) {
   ( (a) == '/'  ) ||    \
   ( (a) == '.'  )
 
-
+/*
 #define  breakp()             \
   n = *p++,                   \
   ( p < maxp )            &&  \
   ( ! ( break_byte(n) ) ) ||  \
   (   ( break_byte(l) )   &&  \
       ( n == *p       ) )
+*/
 
+#define  breakp()           \
+  n = *p++,                 \
+  ( p < maxp )          &&  \
+  ( ! ( break_byte(n) ) ||  \
+      ( break_byte(l) ) &&  \
+      ( n == *p       ) )
+
+/*
+#define  startp()                             \
+  n = *p;                                     \
+  if  ( break_byte(n) )                       \
+        maxp = MIN(p + MAX_PAD_SIZE,   max);  \
+  else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
+*/
+
+#define  startp()                             \
+  if  (  l  == *p  )                          \
+        maxp = MIN(p + MAX_PAD_SIZE,   max);  \
+  else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
 
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
@@ -96,7 +102,10 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);
+/*  for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);  */
+
+    startp();
+    for ( ; breakp(); l = n);
     l = n;
   };
 
