@@ -210,3 +210,10 @@ Tue Apr 19 21:19:22 UTC 2005	no release yet	Kyle Sallee
 Slightly optimized sdelta2 code,
 added support for sdelta2 patch files into the sd wrapper,
 wrote SDELTA2_README to explain what it is.
+
+
+Fri Apr 29 20:48:49 UTC 2005	20050429	Kyle Sallee
+Satisfied with the sdelta2 format which is very similar
+to sdelta format and also no more bugs apparent in the
+linux version of sdelta2 I am making a release.
+sdelta2 may still contain bugs that show up in the FreeBSD port.
