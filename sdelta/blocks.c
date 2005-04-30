@@ -53,10 +53,11 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 
 
 #define  break_byte(a)  \
-  ( (a) == 0x00 ) ||    \
-  ( (a) == 0x0a ) ||    \
-  ( (a) == '/'  ) ||    \
-  ( (a) == '.'  )
+  (   (a) == 0x00 ) ||  \
+  (   (a) == 0x0a ) ||  \
+  ( ( (a) == '/'  ) ||  \
+    ( (a) == '.'  ) &&  \
+    (  z  < 0x08  ) )
 
 /*
 #define  breakp()             \
@@ -91,7 +92,7 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
-  u_int32_t		i;
+  u_int32_t		i, z;
 
   unsigned char		n, l;
 
@@ -107,6 +108,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
     startp();
     for ( ; breakp(); l = n);
     l = n;
+    if ( l == 0 ) z = 0; else z++;
   };
 
   *t  =  s;
