@@ -100,6 +100,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
 
   max  =  b + s;
   l    = 0xff;
+  z    = 0x00;
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;

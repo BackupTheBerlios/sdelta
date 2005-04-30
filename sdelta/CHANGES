@@ -217,3 +217,15 @@ Satisfied with the sdelta2 format which is very similar
 to sdelta format and also no more bugs apparent in the
 linux version of sdelta2 I am making a release.
 sdelta2 may still contain bugs that show up in the FreeBSD port.
+
+
+Sat Apr 30 23:29:26 UTC 2005	no relase yet	Kyle Sallee
+Improved blocking code to select additional block 
+delimiters only near the presence of NULLs.
+This focuses the larger production of blocks 
+within the tar meta-data where he additional 
+blocking can help increase the amount of matching blocks.
+On average still twice as many blocks are produced and 
+many more are searchable in sdelta2 than sdelta causing 
+a small increase in memory consumption and about twice 
+as long to generate a delta file.
