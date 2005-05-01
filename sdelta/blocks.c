@@ -77,16 +77,16 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 
 /*
 #define  startp()                             \
-  n = *p;                                     \
-  if  ( break_byte(n) )                       \
+  if  (  l  == *p  )                          \
         maxp = MIN(p + MAX_PAD_SIZE,   max);  \
   else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
 */
 
 #define  startp()                             \
-  if  (  l  == *p  )                          \
+  if  (  0  == *p  )                          \
         maxp = MIN(p + MAX_PAD_SIZE,   max);  \
   else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
+
 
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
