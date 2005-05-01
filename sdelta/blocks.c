@@ -57,7 +57,7 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
   (   (a) == 0x0a ) ||  \
   ( ( (a) == '/'  ) ||  \
     ( (a) == '.'  ) &&  \
-    (  z  < 0x08  ) )
+    (  z  < 0x04  ) )
 
 /*
 #define  breakp()             \
@@ -68,12 +68,20 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
       ( n == *p       ) )
 */
 
+/*
 #define  breakp()           \
   n = *p++,                 \
   ( p < maxp )          &&  \
   ( ! ( break_byte(n) ) ||  \
       ( break_byte(l) ) &&  \
       ( n == *p       ) )
+*/
+
+#define  breakp()           \
+  n = *p++,                 \
+  ( p < maxp )          &&  \
+  ( ! ( break_byte(n) ) )
+
 
 /*
 #define  startp()                             \
@@ -88,6 +96,27 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
   else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
 
 
+/*
+#define  checkpad()                         \
+  if ( ( max    >   4 +            p  ) &&  \
+       ( 0      ==  *(u_int32_t *)(p) )     \
+     ) {                                    \
+    t++;                                    \
+    *t  =  p  -  b;                         \
+    while ( ( max  >    p )    &&           \
+            ( 0    ==  *p ) )  p++;         \
+    p--;                                    \
+  }
+*/
+
+
+#define  checkpad()                         \
+  if ( n == 0 ) {                           \
+    t++;                                    \
+    *t  =  p - b - 1;                       \
+    while ( ( max  >    p )    &&           \
+            ( 0    ==  *p ) )  p++;         \
+  }
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
@@ -110,6 +139,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
     for ( ; breakp(); l = n);
     l = n;
     if ( l == 0 ) z = 0; else z++;
+    checkpad();
   };
 
   *t  =  s;

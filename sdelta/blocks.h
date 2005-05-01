@@ -116,7 +116,7 @@ typedef struct INDEX {
 } INDEX;
 
 #define  MAX_BLOCK_SIZE 0x7f
-#define  MAX_PAD_SIZE   0x20
+#define  MAX_PAD_SIZE   0x40
 
 u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
