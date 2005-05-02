@@ -374,8 +374,7 @@ void  *prepare_sha1(void *nothing)  {
             potential.head   =
             potential.tail   = 0;
 
-            if ( ( from.block > 0 ) &&
-                 (  to.block  > 0 ) ) {
+            if ( found.count > 0 ) {
                here =   to.buffer +   to.offset - 1;
               there = from.buffer + from.offset - 1;
               while ( here[-potential.head] == there[-potential.head] )
@@ -393,15 +392,15 @@ void  *prepare_sha1(void *nothing)  {
                 potential.tail++;
             }
 
+            potential.total =  potential.size + potential.head + potential.tail;
+
 /*
-            fprintf(stderr, "fb %i, tb %i, fo %i, to %i, pb %i, ps %i, pt %i, lm %i\n",
+            fprintf(stderr, "fb %i, tb %i, fo %i, to %i, pb %i, ps %i, ph %i, pt %i, lm %i, ptot %i\n",
               from.block, to.block,
               from.offset, to.offset,
               potential.blocks, potential.size,
-              potential.tail, limit);
+              potential.head, potential.tail, limit, potential.total);
 */
-
-            potential.total =  potential.size + potential.head + potential.tail;
 
             if ( potential.total > match.total ) {
               match.blocks       =                potential.blocks;
