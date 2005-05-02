@@ -128,7 +128,7 @@ fprintf(stderr,"stretch -%i\n",stretch.dword);
 
 /* *** */
 
-    if  ( ( 7           >  size.dword  ) &&
+    if  ( ( 0x09       >    size.dword ) &&
           ( block + 1  !=  found.count )
         ) { found.pair[block].size.dword = 1; continue; }
 
@@ -299,7 +299,8 @@ void  *prepare_sha1(void *nothing)  {
   while  ( to.index.ordereds  >  to.block )  {
 
     if   ( ( to.index.natural[to.block + 2] -
-             to.index.natural[to.block    ] ) >= 0x08 ) {
+             to.index.natural[to.block    ] ) >= 0x0c ) {
+/* *** */
 
       tag    =  qtag( crc = *(QWORD *)( to.index.crc + to.block ) );
       start  =  from.index.tags[tag].range;

@@ -211,7 +211,10 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
   b--;
 
   for ( l = t = 0; l < b; l++ )
-    if  ( ( bl[l+2] - bl[l] ) >= 0x08 )  r[t++] = l;
+    if  ( ( bl[l+2] - bl[l] ) >= 0x0c )  r[t++] = l;
+
+/* *** */
+
 
   *c  =  t;
    r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
