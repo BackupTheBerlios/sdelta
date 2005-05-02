@@ -79,21 +79,8 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 
 #define  breakp()           \
   n = *p++,                 \
-  ( p < maxp )          &&  \
-  ( ! ( break_byte(n) ) )
-
-
-/*
-#define  startp()                             \
-  if  (  l  == *p  )                          \
-        maxp = MIN(p + MAX_PAD_SIZE,   max);  \
-  else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
-*/
-
-#define  startp()                             \
-  if  (  0  == *p  )                          \
-        maxp = MIN(p + MAX_PAD_SIZE,   max);  \
-  else  maxp = MIN(p + MAX_BLOCK_SIZE, max);
+  ( ! ( break_byte(n) ) &&  \
+  ( p < maxp ) )
 
 
 /*
@@ -133,10 +120,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-/*  for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);  */
-
-    startp();
-    for ( ; breakp(); l = n);
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);
     l = n;
     if ( l == 0 ) z = 0; else z++;
     checkpad();
