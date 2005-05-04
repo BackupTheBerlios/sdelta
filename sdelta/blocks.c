@@ -52,30 +52,30 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
 #ifdef SDELTA_2
 
 
-#define  break_byte(a)  \
-  (   (a) == 0x00 ) ||  \
-  (   (a) == 0x0a ) ||  \
-  ( ( (a) == '/'  ) ||  \
-    ( (a) == '.'  ) &&  \
-    (  z  < 0x04  ) )
-
 /*
-#define  breakp()             \
-  n = *p++,                   \
-  ( p < maxp )            &&  \
-  ( ! ( break_byte(n) ) ) ||  \
-  (   ( break_byte(l) )   &&  \
-      ( n == *p       ) )
+    ( (a) == ','  ) || \
+breaking on tab comma '(' and '=' creates many 
+more blocks for a very minor decrease in sdelta size.
 */
 
 /*
-#define  breakp()           \
-  n = *p++,                 \
-  ( p < maxp )          &&  \
-  ( ! ( break_byte(n) ) ||  \
-      ( break_byte(l) ) &&  \
-      ( n == *p       ) )
+#define  break_byte(a) \
+    ( (a) == 0x00 ) || \
+    ( (a) == 0x09 ) || \
+    ( (a) == 0x0a ) || \
+    ( (a) == '('  ) || \
+    ( (a) == ','  ) || \
+    ( (a) == '='  ) || \
+  ( ( (a) == '/'  ) && ( y < 0x04 ) ) || \
+  ( ( (a) == '.'  ) && ( z < 0x04 ) )
 */
+
+#define  break_byte(a) \
+    ( (a) == 0x00 ) || \
+    ( (a) == 0x0a ) || \
+  ( ( (a) == '/'  ) && ( y < 0x04 ) ) || \
+  ( ( (a) == '.'  ) && ( z < 0x04 ) )
+
 
 #define  breakp()           \
   n = *p++,                 \
@@ -83,46 +83,32 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
   ( p < maxp ) )
 
 
-/*
-#define  checkpad()                         \
-  if ( ( max    >   4 +            p  ) &&  \
-       ( 0      ==  *(u_int32_t *)(p) )     \
-     ) {                                    \
-    t++;                                    \
-    *t  =  p  -  b;                         \
-    while ( ( max  >    p )    &&           \
-            ( 0    ==  *p ) )  p++;         \
-    p--;                                    \
-  }
-*/
-
-
-#define  checkpad()                         \
-  if ( n == 0 ) {                           \
-    t++;                                    \
-    *t  =  p - b - 1;                       \
-    while ( ( max  >    p )    &&           \
-            ( 0    ==  *p ) )  p++;         \
+#define  checkpad()                  \
+  if ( n == 0 ) {                    \
+    t++;                             \
+    *t  =  p - b - 1;                \
+    while ( ( max  >    p )    &&    \
+            ( 0    ==  *p ) )  p++;  \
   }
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
-  u_int32_t		i, z;
-
-  unsigned char		n, l;
+  u_int32_t		i;
+  int			y, z;
+  unsigned char		n;
 
   t    =  r    =  (u_int32_t *) malloc(s + 64);
 
   max  =  b + s;
-  l    = 0xff;
-  z    = 0x00;
+  y    =  \
+  z    =  0x00;
 
   for ( p = b ; p < max ; t++) {
     *t  =  p - b;
-    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(); l = n);
-    l = n;
-    if ( l == 0 ) z = 0; else z++;
+    for ( maxp = MIN(p + MAX_BLOCK_SIZE, max); breakp(););
+    if ( n == 0x00 ) { z = y = 0; } else z++;
+    if ( n == 0x0a ) {     y = 0; } else y++;
     checkpad();
   };
 
