@@ -25,7 +25,10 @@ sdelta is a line blocking dictionary compressor.
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#ifndef NOTHREAD
 #include <pthread.h>
+#endif
 
 #ifdef USE_LIBMD
 #include <sha.h>
@@ -250,7 +253,9 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   unsigned int		count, limit, line, total, where, start, finish;
   u_int16_t		tag;
   QWORD			crc, fcrc;
+#ifndef NOTHREAD
   pthread_t		from_thread, to_thread, sha1_thread;
+#endif
   SHA_CTX		ctx;
   unsigned char		*here, *there;
 
@@ -281,11 +286,17 @@ void  *prepare_sha1(void *nothing)  {
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
+#ifndef NOTHREAD
   pthread_create(   &to_thread, NULL, prepare_to,   NULL );
   pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_join  (    to_thread, NULL );
   pthread_join  (  from_thread, NULL );
   pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
+#else
+  prepare_to(NULL);
+  prepare_from(NULL);
+  prepare_sha1(NULL);
+#endif
 
   found.pair                =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
   found.count               =  0;
@@ -460,7 +471,9 @@ void  *prepare_sha1(void *nothing)  {
   free   (    to.index.natural     );
   free   (    to.index.crc         );
 
+#ifndef NOTHREAD
   pthread_join  ( sha1_thread, NULL );
+#endif
   unload_buf(from_ibuf);
 
   output_sdelta(found, to, from);
@@ -842,7 +855,9 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   unsigned int		count, line, total, where, start, finish, limit;
   u_int16_t		tag;
   QWORD			crc, fcrc;
+#ifndef NOTHREAD
   pthread_t		from_thread, to_thread, sha1_thread;
+#endif
   SHA_CTX		ctx;
 
 
@@ -872,11 +887,17 @@ void  *prepare_sha1(void *nothing)  {
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
+#ifndef NOTHREAD
   pthread_create(   &to_thread, NULL, prepare_to,   NULL );
   pthread_create( &from_thread, NULL, prepare_from, NULL );
   pthread_join  (    to_thread, NULL );
   pthread_join  (  from_thread, NULL );
   pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
+#else
+  prepare_to(NULL);
+  prepare_from(NULL);
+  prepare_sha1(NULL);
+#endif
 
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
   found.count       =  0;
@@ -1028,7 +1049,9 @@ void  *prepare_sha1(void *nothing)  {
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
 
+#ifndef NOTHREAD
   pthread_join  ( sha1_thread, NULL );
+#endif
   unload_buf(from_ibuf);
 
   output_sdelta(found, to, from);

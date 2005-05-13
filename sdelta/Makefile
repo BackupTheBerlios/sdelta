@@ -14,6 +14,12 @@ sdelta2: *.c *.h
 sdelta: *.c *.h
 	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta
 
+sdelta2-not: *.c *.h
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -DNOTHREAD -o sdelta2 -DSDELTA_2
+
+sdelta-not: *.c *.h
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -DNOTHREAD -o sdelta
+
 
 clean:
 	rm -f sdelta
