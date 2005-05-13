@@ -236,3 +236,13 @@ Overhalled the blocking code in sdelta2 to colate
 NULLs into unlimited length blocks by themself.
 This change made sdelta2 generated 
 patches smaller and slower to generate.
+
+
+Fri May 13 03:07:23 UTC 2005	20050513	Kyle Sallee
+After +3 years of patch production at ibiblio.org 
+an admin disable patch production for a week by 
+removing my crontab access and turning off my 
+cronjobs and suggest that I find a new place
+to generate patches.
+Good thing patch generation is a fast light load.
+Therefore, I picked up server scripts and moved to berlios.de

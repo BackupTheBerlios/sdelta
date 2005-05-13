@@ -76,7 +76,7 @@ config_menu()  {
          OK=$"Select"
      CANCEL=$"Done"
        HELP=$"Please configure how sdreq should function
-Upon completion of patch generation sdelta@ibiblio.org 
+Upon completion of patch generation cromwell@berlios.de 
 can send an email notifying pick up is ready.
 Patches can also be uploaded directly to a FTP server."
     E_HELP=$"Email address.           Example: $LOGNAME@$HOSTNAME"
@@ -109,7 +109,7 @@ config_text()  {
   local  COMMAND  OK  CANCEL  HELP
 
     HELP=$"Please configure how sdreq should function
-Upon completion of patch generation sdelta@ibiblio.org 
+Upon completion of patch generation cromwell@berlios.de
 can send an email notifying pick up is ready.
 Patches can also be uploaded directly to a FTP server."
   E_HELP=$"Email address.           Example: $LOGNAME@$HOSTNAME"
@@ -149,7 +149,7 @@ help() {
   echo
   echo  $"Usage: sdreq [command]"
   echo  $"Commands:"
-  echo  $"want		request sdelta patches from http://ibiblio.org/sdelta"
+  echo  $"want		request sdelta patches from http://sdelta.berlios.de/ppr"
   echo  $"download	retrieve previously requested sdelta patches"
   echo  $"new		apply patches to create new files"
   echo  $"config		reconfigure sdreq"
@@ -178,8 +178,8 @@ basenames()  {  sed  "s:.*[/]::"  |  sort  -u;  }
 
 
 post()  {
- curl  -m 60  -F "request=@$1;type=text/plain"    \
-       http://ibiblio.org/sdelta/php/request.php  |
+ curl  -m 60  -F "request=@$1;type=text/plain"   \
+       http://sdelta.berlios.de/ppr/request.php  |
  grep  -v "pre\>"
 }
 
@@ -296,8 +296,8 @@ available()  {
 download()  {
   local  SP ST URL
 
-  SP="http://ibiblio.org/sdelta/files/patches"
-  ST="http://ibiblio.org/sdelta/files/sources"
+  SP="http://sdelta.berlios.de/ppr/files/patches"
+  ST="http://sdelta.berlios.de/ppr/files/sources"
 
   [      -d   $SDREQ_DIR/received  ]  ||
   mkdir  -p   $SDREQ_DIR/received
