@@ -465,11 +465,16 @@ void  *prepare_sha1(void *nothing)  {
 
   }
 
+/*
   free   (  from.index.natural     );
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
+*/
+
+/*
   free   (    to.index.natural     );
   free   (    to.index.crc         );
+*/
 
 #ifndef NOTHREAD
   pthread_join  ( sha1_thread, NULL );
@@ -1045,9 +1050,11 @@ void  *prepare_sha1(void *nothing)  {
     fprintf(stderr, "Bytes unmatched                     %i\n", to.size - total);
   }
 
+/*
   free   (  from.index.natural     );
   free   (  from.index.crc         );
   free   (  from.index.ordered     );
+*/
 
 #ifndef NOTHREAD
   pthread_join  ( sha1_thread, NULL );
@@ -1057,8 +1064,10 @@ void  *prepare_sha1(void *nothing)  {
   output_sdelta(found, to, from);
 
   unload_buf(to_ibuf);
+/*
   free   (    to.index.natural     );
   free   (    to.index.crc         );
+*/
   free   ( found.pair              );
 
 }

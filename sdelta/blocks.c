@@ -1,15 +1,19 @@
 /*
-
 This code, blocks.c written and copyrighted by Kyle Sallee,
 creates and orders lists of dynamically sized blocks of data.
 Please read LICENSE if you have not already
-
 */
 
-
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <sys/mman.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "blocks.h"
 
@@ -97,8 +101,22 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		i;
   int			y, z;
   unsigned char		n;
+  FILE                  *tf;
 
+  tf = tmpfile();
+       fseek  (tf, s/3 + 63, SEEK_SET);
+       fputc  (0,tf);
+       fflush (tf);
+  
+  t    =  r    =  (u_int32_t *)  mmap(NULL, s/3 + 64,
+                                      PROT_READ  | PROT_WRITE,
+                                      MAP_SHARED | MAP_NORESERVE,
+                                      fileno(tf), 0);
+
+
+/*
   t    =  r    =  (u_int32_t *) malloc(s + 64);
+*/
 
   max  =  b + s;
   y    =  \
@@ -115,7 +133,14 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   *t  =  s;
   i   =  ( t - r );
   *c  =  i++;
+/*
   r   =  (u_int32_t *) realloc(r, i * sizeof(u_int32_t));
+*/
+
+  ftruncate( fileno(tf), i * sizeof(u_int32_t));
+#ifdef __linux__
+  r = (u_int32_t *) mremap( r, s/3 + 64, i * sizeof(u_int32_t), MREMAP_MAYMOVE );
+#endif
 
   return  r;
 }
@@ -127,8 +152,21 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
   unsigned char		*p, *max, *maxp;
   u_int32_t		i;
+  FILE			*tf;
 
+  tf = tmpfile();
+       fseek  (tf, s/4 + 63, SEEK_SET);
+       fputc  (0,tf);
+       fflush (tf);
+  
+  t    =  r    =  (u_int32_t *)  mmap(NULL, s/4 + 64,
+                                      PROT_READ  | PROT_WRITE,
+                                      MAP_SHARED | MAP_NORESERVE,
+                                      fileno(tf), 0);
+
+/*
   t    =  r    =  (u_int32_t *) malloc(s + 64);
+*/
 
   max  =  b + s;
 
@@ -140,7 +178,14 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   *t  =  s;
   i   =  ( t - r );
   *c  =  i++;
+
+/*
   r   =  (u_int32_t *) realloc(r, i * sizeof(u_int32_t));
+*/
+  ftruncate( fileno(tf), i * sizeof(u_int32_t));
+#ifdef __linux__
+  r = (u_int32_t *) mremap( r, s/4 + 64, i * sizeof(u_int32_t), MREMAP_MAYMOVE );
+#endif
 
   return  r;
 }
@@ -152,8 +197,22 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
 DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
   DWORD  *l, *list;
   int     size;
+  FILE   *tf;
 
+  size  =  ( c + 1 ) * sizeof(DWORD);
+  tf    =  tmpfile();
+  fseek(tf, size, SEEK_SET);
+  fputc(0,tf);
+  fflush(tf);
+  
+  l = list = ( DWORD *)  mmap(NULL, size,
+                              PROT_READ  | PROT_WRITE,
+                              MAP_SHARED | MAP_NORESERVE,
+                              fileno(tf), 0);
+
+/*
   l = list = ( DWORD *) malloc( ( c + 1 ) * sizeof(DWORD) );
+*/
 
   while ( c > 0 )  {
     size = n[1] - n[0];
@@ -175,19 +234,42 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
   u_int32_t	*r;
   u_int32_t	l, t;
+  int           size;
+  FILE          *tf;
 
+  size  = b * sizeof(u_int32_t);
+  tf    =  tmpfile();
+  fseek(tf, size, SEEK_SET);
+  fputc(0,tf);
+  fflush(tf);
+  
+  r = (u_int32_t *)  mmap(NULL, size,
+                     PROT_READ  | PROT_WRITE,
+                     MAP_SHARED | MAP_NORESERVE,
+                     fileno(tf), 0);
+
+/*
   r     =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
+*/
+
 
   b--;
 
   for ( l = t = 0; l < b; l++ )
     if  ( ( bl[l+2] - bl[l] ) >= 0x0c )  r[t++] = l;
 
-/* *** */
-
 
   *c  =  t;
+
+/*
    r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
+*/
+
+  ftruncate( fileno(tf), t * sizeof(u_int32_t) );
+#ifdef __linux__
+  r = (u_int32_t *) mremap( r, size,   t * sizeof(u_int32_t), MREMAP_MAYMOVE );
+#endif
+
   return  r;
 }
 
@@ -198,8 +280,23 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
   u_int32_t	*r;
   u_int32_t	l, t;
+  int           size;
+  FILE          *tf;
 
+  size  = b * sizeof(u_int32_t);
+  tf    =  tmpfile();
+  fseek(tf, size, SEEK_SET);
+  fputc(0,tf);
+  fflush(tf);
+  
+  r = (u_int32_t *)  mmap(NULL, size,
+                     PROT_READ  | PROT_WRITE,
+                     MAP_SHARED | MAP_NORESERVE,
+                     fileno(tf), 0);
+
+/*
   r     =  (u_int32_t *)  malloc ( b * sizeof(u_int32_t) );
+*/
 
   b--;
 
@@ -207,7 +304,14 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
     if  ( ( bl[l+2] - bl[l] ) >= 0x10 )  r[t++] = l;
 
   *c  =  t;
+/*
    r  =  (u_int32_t *) realloc (r, t * sizeof(u_int32_t) );
+*/
+  ftruncate( fileno(tf), t * sizeof(u_int32_t) );
+#ifdef __linux__
+  r = (u_int32_t *) mremap( r, size,   t * sizeof(u_int32_t), MREMAP_MAYMOVE );
+#endif
+
   return  r;
 }
 

@@ -246,3 +246,26 @@ cronjobs and suggest that I find a new place
 to generate patches.
 Good thing patch generation is a fast light load.
 Therefore, I picked up server scripts and moved to berlios.de
+
+
+Sat May 14 05:29:23 UTC 2005	20050514	Kyle Sallee
+
+The PPR has been moved to a box with a meager
+amount of RAM and a miniscule amount of swap.
+However the box does have plenty of space on /tmp.
+Consequently, sdelta and sdelta2 were modified
+to mmap the large data structures that they
+create onto temporary files created on /tmp
+The temporary files act like swap files.
+This enables sdelta and sdelta2 to use a
+memory address range as large as required,
+and as much RAM as available or required,
+but without spilling into swap space as long
+as /tmp resides on a physical file system
+and not a tmpfs virtual file system.
+
+Also the multi-threading in sdelta and sdelta2
+was causing segmentation faulting at the new PPR.
+Consequently, I created new build targets
+of sdelta-not and sdelta2-not that create
+sdelta and sdelta2, respectively, with no threading.
