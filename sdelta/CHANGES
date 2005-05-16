@@ -249,7 +249,6 @@ Therefore, I picked up server scripts and moved to berlios.de
 
 
 Sat May 14 05:29:23 UTC 2005	20050514	Kyle Sallee
-
 The PPR has been moved to a box with a meager
 amount of RAM and a miniscule amount of swap.
 However the box does have plenty of space on /tmp.
@@ -269,3 +268,17 @@ was causing segmentation faulting at the new PPR.
 Consequently, I created new build targets
 of sdelta-not and sdelta2-not that create
 sdelta and sdelta2, respectively, with no threading.
+
+
+Mon May 16 21:57:06 UTC 2005	20050516	Kyle Sallee
+Pavel reports that threading is not entirely stable on FreeBSD.
+Threading has problems on old linux/glibc.
+In the interest of stablity threading will no longer be used.
+
+This release backs all the memory required
+for data structures to a single temporary file.
+The code is cleaner and checks for errors when
+allocating, resizing and mmaping the temporary file.
+sdelta and sdelta2 patch generation now 
+require the same amount of addressable memory.
+sdelta still uses less RAM than sdelta2.

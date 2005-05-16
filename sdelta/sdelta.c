@@ -26,10 +26,6 @@ sdelta is a line blocking dictionary compressor.
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifndef NOTHREAD
-#include <pthread.h>
-#endif
-
 #ifdef USE_LIBMD
 #include <sha.h>
 #else
@@ -253,52 +249,27 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   unsigned int		count, limit, line, total, where, start, finish;
   u_int16_t		tag;
   QWORD			crc, fcrc;
-#ifndef NOTHREAD
-  pthread_t		from_thread, to_thread, sha1_thread;
-#endif
   SHA_CTX		ctx;
   unsigned char		*here, *there;
-
-
-void  *prepare_to(void *nothing)  {
-  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
-  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
-  return NULL;
-}
-
-
-void  *prepare_from(void *nothing)  {
-  make_index  ( &from.index, from.buffer, from.size );
-  /* MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM ); */
-  return NULL;
-}
-
-
-void  *prepare_sha1(void *nothing)  {
-  SHA1_Init(&ctx);
-  SHA1_Update(&ctx, from.buffer, from.size);
-  SHA1_Final(from.digest, &ctx);
-  return NULL;
-}
 
   from.buffer = from_ibuf->buf;
   to.buffer   =   to_ibuf->buf;
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
-#ifndef NOTHREAD
-  pthread_create(   &to_thread, NULL, prepare_to,   NULL );
-  pthread_create( &from_thread, NULL, prepare_from, NULL );
-  pthread_join  (    to_thread, NULL );
-  pthread_join  (  from_thread, NULL );
-  pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
-#else
-  prepare_to(NULL);
-  prepare_from(NULL);
-  prepare_sha1(NULL);
-#endif
+  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
+  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
 
+  make_index  ( &from.index, from.buffer, from.size );
+
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, from.buffer, from.size);
+  SHA1_Final(from.digest, &ctx);
+
+/*
   found.pair                =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
+*/
+  found.pair                = ( PAIR * ) temp.current;
   found.count               =  0;
   to.block                  =
   to.offset                 =  0;
@@ -447,7 +418,10 @@ void  *prepare_sha1(void *nothing)  {
   found.pair[found.count  ].to.dword    =    to.size;
   found.pair[found.count  ].from.dword  =  from.size;
   found.pair[found.count++].size.dword  =  0;
+/*
   found.pair                            =  realloc ( found.pair, sizeof(PAIR) * found.count );
+*/
+  temp.current += sizeof(PAIR) * found.count;
 
   if ( verbosity > 0 ) {
     fprintf(stderr, "Statistics for sdelta generation.\n");
@@ -476,15 +450,19 @@ void  *prepare_sha1(void *nothing)  {
   free   (    to.index.crc         );
 */
 
-#ifndef NOTHREAD
-  pthread_join  ( sha1_thread, NULL );
-#endif
   unload_buf(from_ibuf);
+
+/*
+  fprintf(stderr, "total %i  size %i\n", temp.size,
+          temp.current - temp.start );
+*/
 
   output_sdelta(found, to, from);
 
+/*
   unload_buf(to_ibuf);
   free   ( found.pair              );
+*/
 
 }
 
@@ -860,51 +838,28 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   unsigned int		count, line, total, where, start, finish, limit;
   u_int16_t		tag;
   QWORD			crc, fcrc;
-#ifndef NOTHREAD
-  pthread_t		from_thread, to_thread, sha1_thread;
-#endif
   SHA_CTX		ctx;
-
-
-void  *prepare_to(void *nothing)  {
-  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
-  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
-  return NULL;
-}
-
-
-void  *prepare_from(void *nothing)  {
-  make_index  ( &from.index, from.buffer, from.size );
-  /* MADVISE_IBUF( from_ibuf,   from.buffer, from.size, MADV_RANDOM ); */
-  return NULL;
-}
-
-
-void  *prepare_sha1(void *nothing)  {
-  SHA1_Init(&ctx);
-  SHA1_Update(&ctx, from.buffer, from.size);
-  SHA1_Final(from.digest, &ctx);
-  return NULL;
-}
 
   from.buffer = from_ibuf->buf;
   to.buffer   =   to_ibuf->buf;
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
-#ifndef NOTHREAD
-  pthread_create(   &to_thread, NULL, prepare_to,   NULL );
-  pthread_create( &from_thread, NULL, prepare_from, NULL );
-  pthread_join  (    to_thread, NULL );
-  pthread_join  (  from_thread, NULL );
-  pthread_create( &sha1_thread, NULL, prepare_sha1, NULL );
-#else
-  prepare_to(NULL);
-  prepare_from(NULL);
-  prepare_sha1(NULL);
-#endif
 
+  to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
+  to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
+
+  make_index  ( &from.index, from.buffer, from.size );
+
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, from.buffer, from.size);
+  SHA1_Final(from.digest, &ctx);
+
+/*
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
+*/
+  found.pair        = ( PAIR * ) temp.current;
+
   found.count       =  0;
   to.block          =  0;
 
@@ -1005,7 +960,10 @@ void  *prepare_sha1(void *nothing)  {
   found.pair[found.count  ].to.dword     =  to.index.naturals;
   found.pair[found.count  ].from.dword   =  0;
   found.pair[found.count++].count.dword  =  0;
+/*
   found.pair                             =  realloc ( found.pair, sizeof(PAIR) * found.count );
+*/
+  temp.current += sizeof(PAIR) * found.count;
 
   if ( verbosity > 0 ) {
     fprintf(stderr, "Statistics for sdelta generation.\n");
@@ -1056,19 +1014,21 @@ void  *prepare_sha1(void *nothing)  {
   free   (  from.index.ordered     );
 */
 
-#ifndef NOTHREAD
-  pthread_join  ( sha1_thread, NULL );
-#endif
   unload_buf(from_ibuf);
+
+/*
+  fprintf(stderr, "total %i  size %i\n", temp.size,
+          temp.current - temp.start );
+*/
 
   output_sdelta(found, to, from);
 
-  unload_buf(to_ibuf);
 /*
+  unload_buf(to_ibuf);
   free   (    to.index.natural     );
   free   (    to.index.crc         );
-*/
   free   ( found.pair              );
+*/
 
 }
 
@@ -1284,6 +1244,8 @@ void  parse_parameters( char *f1, char *f2)  {
   load_buf(f1, &b1);
   load_buf(f2, &b2);
 
+  init_temp(MAX(b1.size, b2.size));
+
   if ( memcmp( b2.buf, magic, 4 ) == 0 )
         make_to     (&b1, &b2);
   else  make_sdelta (&b1, &b2);
@@ -1293,7 +1255,7 @@ void  parse_parameters( char *f1, char *f2)  {
 void  parse_stdin(void) {
   INPUT_BUF b;
 
-  load_buf(NULL, &b);
+  load_buf(NULL, &b);  init_temp(b.size);
   make_to (NULL, &b);
 } 
 

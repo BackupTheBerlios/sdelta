@@ -9,24 +9,17 @@ LDFLAGS ?= -Wl,-s
 all:	sdelta	sdelta2
 
 sdelta2: *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta2 -DSDELTA_2
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta2 -DSDELTA_2
 
 sdelta: *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -lpthread -o sdelta
-
-sdelta2-not: *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -DNOTHREAD -o sdelta2 -DSDELTA_2
-
-sdelta-not: *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -DNOTHREAD -o sdelta
-
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta
 
 clean:
 	rm -f sdelta
 
 bsd:  *.c *.h
-	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -pthread -ldlmalloc /usr/lib/libmd.a -o sdelta
-	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -pthread -ldlmalloc /usr/lib/libmd.a -o sdelta2 -DSDELTA_2
+	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta
+	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta2 -DSDELTA_2
 
 install: sdelta
 	mkdir   -m 0755  -p                     $(PREFIX)/bin
