@@ -85,7 +85,11 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   SHA_CTX		ctx;
   unsigned char		*here, *there;
 
+/*
   found.buffer   =  malloc ( to.size );
+*/
+  found.buffer   =  (unsigned char *)  temp.current;
+
   memcpy( found.buffer,      magic,     4  );
   memcpy( found.buffer + DIGEST_SIZE + 4, from.digest, DIGEST_SIZE );
   found.offset   =  4 + 2 * DIGEST_SIZE;
@@ -236,8 +240,9 @@ fprintf(stderr,"blk %i  to %i  stretch %i\n", block, to.offset, stretch.dword);
   SHA1_Final(found.buffer + 4, &ctx);
 
   fwrite( found.buffer, 1, found.offset, stdout );
+/*
   free(found.buffer);
-
+*/
 }
 
 
@@ -257,10 +262,9 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
+  make_index  ( &from.index, from.buffer, from.size );
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
-
-  make_index  ( &from.index, from.buffer, from.size );
 
   SHA1_Init(&ctx);
   SHA1_Update(&ctx, from.buffer, from.size);
@@ -269,7 +273,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
 /*
   found.pair                =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
 */
-  found.pair                = ( PAIR * ) temp.current;
+  found.pair                = ( PAIR * ) to.index.crc;
   found.count               =  0;
   to.block                  =
   to.offset                 =  0;
@@ -421,7 +425,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
 /*
   found.pair                            =  realloc ( found.pair, sizeof(PAIR) * found.count );
 */
-  temp.current += sizeof(PAIR) * found.count;
+  temp.current = (void *) to.index.crc + sizeof(PAIR) * found.count;
 
   if ( verbosity > 0 ) {
     fprintf(stderr, "Statistics for sdelta generation.\n");
@@ -536,7 +540,10 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   };
 
 /* *** */
+/*
   found.pair         =  malloc ( sizeof(FOUND) * found.count );
+*/
+  found.pair         = (PAIR *) temp.current;
   found.count        =  0;
   found.offset       =  8 + 2 * DIGEST_SIZE;
   /* Skip the magic and 2 sha1 and to size */
@@ -621,6 +628,7 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
 /*
   found.pair    =  realloc( found.pair, sizeof(PAIR) * found.count );
 */
+  temp.current += sizeof(PAIR) * found.count;
 
   dwp           =  (DWORD *)&delta.size;
   dwp->byte.b3  =  found.buffer[found.offset++];
@@ -711,7 +719,11 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   unsigned int		offset_unmatched_size;
   SHA_CTX		ctx;
 
+/*
   found.buffer   =  malloc ( to.size );
+*/
+  found.buffer   =  (unsigned char *) temp. current;
+
   memcpy( found.buffer,      magic,     4  );
   memcpy( found.buffer + DIGEST_SIZE + 4, from.digest, DIGEST_SIZE );
   found.offset   =  4 + 2 * DIGEST_SIZE;
@@ -825,8 +837,9 @@ void	output_sdelta(FOUND found, TO to, FROM from) {
   SHA1_Final(found.buffer + 4, &ctx);
 
   fwrite( found.buffer, 1, found.offset, stdout );
+/*
   free(found.buffer);
-
+*/
 }
 
 
@@ -845,11 +858,9 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
   from.size   = from_ibuf->size;
   to.size     =   to_ibuf->size;
 
-
+  make_index  ( &from.index, from.buffer, from.size );
   to.index.natural  =  natural_block_list ( to.buffer, to.size, &to.index.naturals );
   to.index.crc      =  crc_list ( to.buffer, to.index.natural, to.index.naturals );
-
-  make_index  ( &from.index, from.buffer, from.size );
 
   SHA1_Init(&ctx);
   SHA1_Update(&ctx, from.buffer, from.size);
@@ -858,7 +869,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
 /*
   found.pair        =  malloc ( sizeof(PAIR) * to.index.naturals >> 2 );
 */
-  found.pair        = ( PAIR * ) temp.current;
+  found.pair        = ( PAIR * ) to.index.crc;
 
   found.count       =  0;
   to.block          =  0;
@@ -963,7 +974,7 @@ void  make_sdelta(INPUT_BUF *from_ibuf, INPUT_BUF *to_ibuf)  {
 /*
   found.pair                             =  realloc ( found.pair, sizeof(PAIR) * found.count );
 */
-  temp.current += sizeof(PAIR) * found.count;
+  temp.current = (void *) to.index.crc + sizeof(PAIR) * found.count;
 
   if ( verbosity > 0 ) {
     fprintf(stderr, "Statistics for sdelta generation.\n");
@@ -1069,7 +1080,11 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
   dwp->byte.b1       =  found.buffer[found.offset++];
   dwp->byte.b0       =  found.buffer[found.offset++];
   /* in rare cases found.size may not be enough */
+/*
   found.pair         =  malloc ( found.size );
+*/
+
+  found.pair         = (PAIR *) temp.current;
   found.count        =  0;
   line               =  0;
 
@@ -1149,7 +1164,10 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
 
   };
 
+/*
   found.pair    =  realloc( found.pair, sizeof(PAIR) * found.count );
+*/
+  temp.current += sizeof(PAIR) * found.count;
 
   dwp           =  (DWORD *)&delta.size;
   dwp->byte.b3  =  found.buffer[found.offset++];
@@ -1181,7 +1199,6 @@ void   make_to(INPUT_BUF *from_ibuf, INPUT_BUF *found_ibuf)  {
     fprintf(stderr, "The sha1 for the dictionary file did not match.\nAborting.\n");
     exit(EXIT_FAILURE);
   }
-
 
    from.index.natural  =  natural_block_list (  from.buffer,  from.size,  &from.index.naturals );
   delta.index.natural  =  natural_block_list ( delta.buffer, delta.size, &delta.index.naturals );
@@ -1244,11 +1261,10 @@ void  parse_parameters( char *f1, char *f2)  {
   load_buf(f1, &b1);
   load_buf(f2, &b2);
 
-  init_temp(MAX(b1.size, b2.size));
+  if ( memcmp( b2.buf, magic, 4 ) == 0 ) {
+    init_temp(MAX(b1.size, b2.size));    make_to     (&b1, &b2); } else {
+    init_temp(MAX(b1.size, b2.size)*2);  make_sdelta (&b1, &b2); }
 
-  if ( memcmp( b2.buf, magic, 4 ) == 0 )
-        make_to     (&b1, &b2);
-  else  make_sdelta (&b1, &b2);
 }
 
 
