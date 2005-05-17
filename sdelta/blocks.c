@@ -295,7 +295,9 @@ TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigne
     tags[ t ].index = loop;
   }
 
+/*
   free ( tag );
+*/
 
   for( loop = 0; loop < 0x10000; loop++ )
     qsort( &r[tags[loop].index],
