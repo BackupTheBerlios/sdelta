@@ -228,6 +228,12 @@ u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
   u_int16_t	*list;
   int		loop;
 
+/*
+  fprintf(stderr, "total %i  used %i\n",
+          temp.size, temp.current - temp.start); 
+  fprintf(stderr, "tlb %i\n", c * sizeof(u_int16_t) );
+*/
+
   list = ( u_int16_t * ) temp.current;
 
 /*

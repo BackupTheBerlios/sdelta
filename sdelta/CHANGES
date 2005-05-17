@@ -282,3 +282,10 @@ allocating, resizing and mmaping the temporary file.
 sdelta and sdelta2 patch generation now 
 require the same amount of addressable memory.
 sdelta still uses less RAM than sdelta2.
+
+
+Tue May 17 07:53:50 UTC 2005 	20050517	Kyle Sallee
+This is a fix to prevent segmentation faulting 
+from a free on a memory that was not malloced.
+And it fixes a possible memory overrun when
+generating patches on very small tarballs.

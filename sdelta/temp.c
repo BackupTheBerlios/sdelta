@@ -2,7 +2,7 @@
 
 void  init_temp(int size) {
 
-  temp.size  =  size;
+  temp.size  =  size + 0x80000;
   temp.tfp   =  tmpfile();
 
   if  ( temp.tfp == NULL ) {
@@ -10,13 +10,13 @@ void  init_temp(int size) {
     exit(EXIT_FAILURE);
   }
 
-  if  ( ftruncate( fileno(temp.tfp), size ) ==  -1 )  {
+  if  ( ftruncate( fileno(temp.tfp), temp.size ) ==  -1 )  {
     perror("Unable to extend temporary file\n");
     exit(EXIT_FAILURE);
   }
 
   temp.start    =
-  temp.current  =  mmap(NULL, size,
+  temp.current  =  mmap(NULL, temp.size,
                         PROT_READ | PROT_WRITE,
                         MAP_SHARED | MAP_NORESERVE,
                         fileno(temp.tfp), 0);
