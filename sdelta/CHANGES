@@ -289,3 +289,10 @@ This is a fix to prevent segmentation faulting
 from a free on a memory that was not malloced.
 And it fixes a possible memory overrun when
 generating patches on very small tarballs.
+
+
+Wed May 18 00:54:54 UTC 2005	20050518	Kyle Sallee
+berlios.de reconfigured the web server to deny
+access to files with extentions .bz2 and .gz.
+Therefore, I adjusted both the server and client 
+to provide patches via berlios's ftp server.

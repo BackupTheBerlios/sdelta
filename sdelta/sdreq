@@ -296,8 +296,11 @@ available()  {
 download()  {
   local  SP ST URL
 
-  SP="http://sdelta.berlios.de/ppr/files/patches"
-  ST="http://sdelta.berlios.de/ppr/files/sources"
+#  SP="http://sdelta.berlios.de/ppr/files/patches"
+#  ST="http://sdelta.berlios.de/ppr/files/sources"
+
+  SP="ftp://ftp.berlios.de/pub/sdelta/patches"
+  ST="ftp://ftp.berlios.de/pub/sdelta/sources"
 
   [      -d   $SDREQ_DIR/received  ]  ||
   mkdir  -p   $SDREQ_DIR/received
