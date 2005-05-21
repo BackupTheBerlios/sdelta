@@ -2,6 +2,7 @@
 
 #include <sys/types.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -12,7 +13,6 @@
 #endif
 
 
-/* adler32.h */
 #ifdef __linux__
 #include <endian.h>
 #elif defined(sun) || defined(__sun)
@@ -99,18 +99,19 @@ typedef union QWORD {
 } QWORD;
 
 
-#define qtag(qt)( ( u_int16_t ) ( ( (qt).dword.low.word.low   + \
-                                    (qt).dword.low.word.high  + \
-                                    (qt).dword.high.word.low  + \
-                                    (qt).dword.high.word.high ) & 0xffff ) )
-
-/* end of adler32.h */
-
 typedef struct TAG {
   u_int32_t	index;
   u_int32_t	range;
 } TAG;
 
+
+#define qtag(qt)( ( u_int16_t ) ( ( (qt).dword.low.word.low   + \
+                                    (qt).dword.low.word.high  + \
+                                    (qt).dword.high.word.low  + \
+                                    (qt).dword.high.word.high ) & 0xffff ) )
+
+
+#ifndef SDELTA_3
 
 typedef struct INDEX {
 /*  LINE		*natural;  */
@@ -122,14 +123,21 @@ typedef struct INDEX {
   TAG		*tags;
 } INDEX;
 
+
 #define  MAX_BLOCK_SIZE 0x7f
 
-u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
 DWORD      *crc_list_sig        (unsigned char *, u_int32_t     *, int, int *);
-void        make_index          (INDEX         *, unsigned char *, int);
 
-/*
-LINE	*natural_block_list	(unsigned char *, int,             u_int32_t *);
-INDEX	*make_index		(INDEX         *, unsigned char *, int);
-*/
+#else /* above used for SDELTA and SDELTA_2 */
+
+typedef struct INDEX {
+  u_int32_t	*natural;
+  u_int32_t	 naturals;
+} INDEX;
+
+#endif /* different INDEX for sdelta_3 */
+
+
+u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);
+void        make_index          (INDEX         *, unsigned char *, int);

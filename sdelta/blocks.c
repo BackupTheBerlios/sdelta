@@ -22,6 +22,8 @@ Please read LICENSE if you have not already
 #endif
 
 
+#ifndef SDELTA_3
+
 /*
 This is Kyle Sallee's implementation of Mark Adler's
 excellent and fast 32-bit cyclic redundancy check.
@@ -52,27 +54,117 @@ static inline u_int32_t adler32(unsigned char *b, u_int32_t s) {
   return  w.dword;
 }
 
+#endif
+
+#ifdef SDELTA_3
+
+/*
+#define trip_byte(a)   \
+    ( (a) == 0x0a ) || \
+    ( (a) == 0x00 ) || \
+    ( (a) == 0x90 ) || \
+    ( (a) == 0xff )
+
+#define skip_byte(a)   \
+    ( (a) == ' '  ) || \
+    ( (a) == '#'  ) || \
+    ( (a) == '/'  ) || \
+    ( (a) == '*'  )
+
+*/
+
+int  trip_byte(char b)  {
+  switch (b) {
+    case 0x0a :
+    case 0x00 :
+    case 0x90 :
+    case 0xff : return 1; break;
+    default   : return 0; break;
+  }
+}
+
+int  skip_byte(char b)  {
+  switch (b) {
+    case ' '  :
+    case 0x09 :
+    case '0'  :
+    case '#'  :
+    case '/'  :
+    case '*'  : return 1; break;
+    default   : return 0; break;
+  }
+}
+
+
+u_int32_t       *natural_block_list(unsigned char *b, int s, u_int32_t *c) {
+
+  u_int32_t     *list;
+  int           off, blk, max;
+
+  list =  (u_int32_t *) temp.current;
+
+  max  =  s - 8;
+  off  =  \
+  blk  =  0;
+
+  list[blk++]=off++;
+
+  while   ( off < max ) {
+    while ( off < max && ! ( trip_byte(b[off++]) ) );
+    while ( off < max &&   ( trip_byte(b[off  ]) ) )  off++;
+    while ( off < max &&   ( skip_byte(b[off  ]) ) )  off++;
+    if    ( off < max && ! ( trip_byte(b[off  ]) ) )
+      list[blk++]=off++;
+  }
+
+  list[blk  ] = s;
+
+  max        = blk;
+  off        = 0;
+  blk        = 0;
+
+  for(;max>off;off++)
+    if ( list[off+1] - list[off] >= 0x0c )
+         list[blk++] = list[off];
+
+  list[blk]     = s;
+
+  while ( 0x1000 > ( list[blk] - list[blk-1] ) )
+    list[--blk] = s;
+
+  *c            = blk++;
+  temp.current += blk * sizeof(u_int32_t);
+  return  list;
+}
+
+
+void  *order_blocks ( unsigned char *b, u_int32_t *n, int c ) {
+
+  int           loop;
+  u_int16_t     t;
+  u_int16_t     *tag;
+  TAG           *tags;
+
+
+#if __GNUC__ >= 4
+  auto int  compare_mem (const void *v0, const void *v1)  {
+#else
+  static int  compare_mem (const void *v0, const void *v1)  {
+#endif
+
+    return  memcmp ( b + *(u_int32_t *)v0,
+                     b + *(u_int32_t *)v1, 0x1000 );
+  }
+
+  qsort(n, c, sizeof(u_int32_t), compare_mem);
+
+  return;
+
+}
+
+#endif
 
 #ifdef SDELTA_2
-
-
-/*
-    ( (a) == ','  ) || \
-breaking on tab comma '(' and '=' creates many 
-more blocks for a very minor decrease in sdelta size.
-*/
-
-/*
-#define  break_byte(a) \
-    ( (a) == 0x00 ) || \
-    ( (a) == 0x09 ) || \
-    ( (a) == 0x0a ) || \
-    ( (a) == '('  ) || \
-    ( (a) == ','  ) || \
-    ( (a) == '='  ) || \
-  ( ( (a) == '/'  ) && ( y < 0x04 ) ) || \
-  ( ( (a) == '.'  ) && ( z < 0x04 ) )
-*/
 
 #define  break_byte(a) \
     ( (a) == 0x00 ) || \
@@ -125,8 +217,9 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   return  r;
 }
 
+#endif
 
-#else  /* sdelta 1 style */
+#ifdef SDELTA_1
 
 u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
   u_int32_t		*r, *t;
@@ -154,6 +247,7 @@ u_int32_t	*natural_block_list(unsigned char *b, int s, u_int32_t *c) {
 
 #endif
 
+#ifndef SDELTA_3
 
 DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
   DWORD  *l, *list;
@@ -176,9 +270,9 @@ DWORD	*crc_list ( unsigned char *b, u_int32_t *n, int c) {
   return  list;
 }
 
+#endif
 
 #ifdef SDELTA_2
-
 
 unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
@@ -199,8 +293,9 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
   return  r;
 }
 
+#endif
 
-#else /* sdelta 1 style */
+#ifdef SDELTA_1
 
 unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
@@ -223,6 +318,7 @@ unsigned int *list_sig ( u_int32_t *bl, unsigned int b, unsigned int *c) {
 
 #endif
 
+#ifndef SDELTA_3
 
 u_int16_t   *tag_list ( DWORD *cr, unsigned int c) {
   u_int16_t	*list;
@@ -294,7 +390,7 @@ TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigne
 
   for ( loop = 0; loop < 0x10000 ; loop++)
     tags[loop].index =
-    tags[loop].range = 0x0;
+    tags[loop].range = 0x0000;
 
   for ( loop = b - 1 ; loop >= 0 ; loop--) {
           t = tag[ r[loop] ];
@@ -343,3 +439,14 @@ void make_index(INDEX *r, unsigned char *b, int s) {
 */
 
 }
+
+#endif
+
+#ifdef SDELTA_3
+
+void make_index(INDEX *r, unsigned char *b, int s) {
+  r->natural     =  natural_block_list  (b, s,         &r->naturals);
+                    order_blocks        (b, r->natural, r->naturals);
+}
+
+#endif

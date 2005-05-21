@@ -24,6 +24,19 @@ typedef struct FROM {
 } FROM;
 
 
+#ifdef SDELTA_3
+
+typedef struct MATCH {
+  u_int32_t	from_offset, to_offset, blocks, size, head, tail, total;
+} MATCH;
+
+
+typedef struct PAIR {
+  DWORD		to, from, size;
+} PAIR;
+
+
+#endif
 #ifdef SDELTA_2
 
 typedef struct MATCH {
@@ -35,7 +48,9 @@ typedef struct PAIR {
   DWORD		to, from, size;
 } PAIR;
 
-#else /* sdelta 1 style */
+
+#endif
+#ifdef SDELTA_1
 
 typedef struct MATCH {
   u_int32_t     line, count;

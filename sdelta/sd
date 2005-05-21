@@ -24,13 +24,14 @@ is_sdelta()  {
 
 root()  {
   local  R
+         R="${R%.sd3}"
+         R="${R%.sd2}"
+         R="${R%.sdelta}"
+         R="${R%.sd}"
          R="${1%.7z}"
          R="${R%.bz2}"
          R="${R%.gz}"
          R="${R/.tgz/.tar}"
-         R="${R%.sdelta}"
-         R="${R%.sd2}"
-         R="${R%.sd}"
   echo "$R"
 }
 
@@ -110,6 +111,9 @@ guess()  {
   elif  [  -f  "$R.sdelta.7z"  ];  then  echo  "$R.sdelta.7z"
   elif  [  -f  "$R.sdelta.bz2" ];  then  echo  "$R.sdelta.bz2"
   elif  [  -f  "$R.sdelta.gz"  ];  then  echo  "$R.sdelta.gz"
+  elif  [  -f  "$R.sd3.7z"     ];  then  echo  "$R.sd3.7z"
+  elif  [  -f  "$R.sd3.bz2"    ];  then  echo  "$R.sd3.bz2"
+  elif  [  -f  "$R.sd3.gz"     ];  then  echo  "$R.sd3.gz"
   elif  [  -f  "$R.sd.7z"      ];  then  echo  "$R.sd.7z"
   elif  [  -f  "$R.sd.bz2"     ];  then  echo  "$R.sd.bz2"
   elif  [  -f  "$R.sd.gz"      ];  then  echo  "$R.sd.gz"
@@ -197,9 +201,9 @@ then  R0="$R2";  D0="$D2"
       R1="$R0";  D1="$D0"
 fi
 
-if    echo  "$D2$D3"  |  grep  -q  "\.sd2"
-then  sdelta2 "$D1"  "$D2"  >  "$R3"
-else  sdelta  "$D1"  "$D2"  >  "$R3"
+if    echo "$D2$D3" | grep -q "\.sd3"; then sdelta3 "$D1" "$D2" > "$R3"
+elif  echo "$D2$D3" | grep -q "\.sd2"; then sdelta2 "$D1" "$D2" > "$R3"
+                                       else sdelta  "$D1" "$D2" > "$R3"
 fi
 
 RET=$?

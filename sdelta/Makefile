@@ -6,13 +6,16 @@ LDFLAGS ?= -Wl,-s
 
 .PHONY: all bsd install clean
 
-all:	sdelta	sdelta2
+all:	sdelta	sdelta2  sdelta3
+
+sdelta3: *.c *.h
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta3 -DSDELTA_3
 
 sdelta2: *.c *.h
 	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta2 -DSDELTA_2
 
 sdelta: *.c *.h
-	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta
+	$(CC) $(CFLAGS) $(LDFLAGS) *.c -lcrypto -o sdelta  -DSDELTA_1
 
 clean:
 	rm -f sdelta
@@ -24,6 +27,7 @@ bsd:  *.c *.h
 install: sdelta
 	mkdir   -m 0755  -p                     $(PREFIX)/bin
 	install -m 0755  sdelta   sdelta2       $(PREFIX)/bin
+	install -m 0755  sdelta3                $(PREFIX)/bin
 	install -m 0755  sd       sdreq         $(PREFIX)/bin
 	mkdir   -m 0755  -p                     $(PREFIX)/share/sdelta
 	install -m 0644  LICENSE  USAGE         $(PREFIX)/share/sdelta

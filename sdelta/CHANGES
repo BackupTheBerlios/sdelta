@@ -296,3 +296,19 @@ berlios.de reconfigured the web server to deny
 access to files with extentions .bz2 and .gz.
 Therefore, I adjusted both the server and client 
 to provide patches via berlios's ftp server.
+
+
+Sat May 21 07:06:35 UTC 2005	no release yet	Kyle Sallee
+This release introduces sdelta3.
+sdelta3 is both faster and produces
+smaller patch files than sdelta2.
+sdelta3 is not as fast as sdelta,
+but it uses less memory than sdelta and sdelta2.
+
+sdelta3 is less complexs.
+sdelta3 does not use hashes nor CRC lists.
+Instead it combines the best technologies of
+sdelta and sdelta2 while eliminating the dubious overhead.
+sdelta3 demonstrates an effective delta generator
+can be created using only 1 or 2 arrays of blocks in
+addition to the content of the files being compared.
