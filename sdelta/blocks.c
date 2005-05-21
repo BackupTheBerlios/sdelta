@@ -292,8 +292,9 @@ TAG  *order_tag ( u_int32_t *n, u_int32_t *r, DWORD *cr, unsigned int b, unsigne
 
   qsort(r, b, sizeof(u_int32_t), compare_tag);
 
-  for ( loop = 0; loop < 0xffff ; )
-    tags[loop++].range = 0x0;
+  for ( loop = 0; loop < 0x10000 ; loop++)
+    tags[loop].index =
+    tags[loop].range = 0x0;
 
   for ( loop = b - 1 ; loop >= 0 ; loop--) {
           t = tag[ r[loop] ];
