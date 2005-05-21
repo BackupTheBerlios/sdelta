@@ -21,8 +21,9 @@ clean:
 	rm -f sdelta
 
 bsd:  *.c *.h
-	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta
-	$(CC) $(CFLAGS) -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta2 -DSDELTA_2
+	$(CC) $(CFLAGS) -DSDELTA_1 -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta
+	$(CC) $(CFLAGS) -DSDELTA_2 -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta2
+	$(CC) $(CFLAGS) -DSDELTA_3 -DUSE_LIBMD *.c $(LDFLAGS) -ldlmalloc /usr/lib/libmd.a -o sdelta3
 
 install: sdelta
 	mkdir   -m 0755  -p                     $(PREFIX)/bin
