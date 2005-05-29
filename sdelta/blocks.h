@@ -111,8 +111,6 @@ typedef struct TAG {
                                     (qt).dword.high.word.high ) & 0xffff ) )
 
 
-#ifndef SDELTA_3
-
 typedef struct INDEX {
 /*  LINE		*natural;  */
   u_int32_t	*natural;
@@ -128,15 +126,6 @@ typedef struct INDEX {
 
 DWORD      *crc_list            (unsigned char *, u_int32_t     *, int);
 DWORD      *crc_list_sig        (unsigned char *, u_int32_t     *, int, int *);
-
-#else /* above used for SDELTA and SDELTA_2 */
-
-typedef struct INDEX {
-  u_int32_t	*natural;
-  u_int32_t	 naturals;
-} INDEX;
-
-#endif /* different INDEX for sdelta_3 */
 
 
 u_int32_t  *natural_block_list  (unsigned char *, int,             u_int32_t *);

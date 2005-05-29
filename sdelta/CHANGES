@@ -312,3 +312,18 @@ sdelta and sdelta2 while eliminating the dubious overhead.
 sdelta3 demonstrates an effective delta generator
 can be created using only 1 or 2 arrays of blocks in
 addition to the content of the files being compared.
+
+
+Sun May 29 22:11:50 UTC 2005	20050529	Kyle Sallee
+
+This may be the last release of sdelta.
+The source was truncated to providing only sdelta.
+
+sdreq was removed from this tarball.
+sdreq is provided with sdelta3 which is the
+new standard for patches generated at the PPR.
+sdelta has a nice combination of tiny patch size with speed.
+However sdelta3 creates smaller compressed patches.
+Since patch generation is done only once for the many times
+which it can be downloaded and applied using sdelta3's
+smaller yet slower to generate patches is best for the PPR.
